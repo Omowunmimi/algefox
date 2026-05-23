@@ -1,6 +1,11 @@
 /**
  * Supabase database type definitions.
  * Run `npx supabase gen types typescript` to regenerate after schema changes.
+ *
+ * Format matches @supabase/supabase-js v2 GenericTable requirements:
+ * - `type` (not `interface`)
+ * - `Relationships: []` on every table
+ * - `{ [_ in never]: never }` for empty Views / Functions / Enums / CompositeTypes
  */
 
 export type Json =
@@ -11,7 +16,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       /* ── profiles ─────────────────────────────────────────── */
@@ -51,6 +56,7 @@ export interface Database {
           participant_id?: string | null;
           updated_at?: string;
         };
+        Relationships: [];
       };
 
       /* ── user_stats ───────────────────────────────────────── */
@@ -92,6 +98,7 @@ export interface Database {
           questions_correct?: number;
           updated_at?: string;
         };
+        Relationships: [];
       };
 
       /* ── streaks ──────────────────────────────────────────── */
@@ -121,6 +128,7 @@ export interface Database {
           streak_shield_active?: boolean;
           updated_at?: string;
         };
+        Relationships: [];
       };
 
       /* ── units ────────────────────────────────────────────── */
@@ -157,6 +165,7 @@ export interface Database {
           sort_order?: number;
           is_active?: boolean;
         };
+        Relationships: [];
       };
 
       /* ── sections ─────────────────────────────────────────── */
@@ -193,6 +202,7 @@ export interface Database {
           levels_per_section?: number;
           is_active?: boolean;
         };
+        Relationships: [];
       };
 
       /* ── question_templates ───────────────────────────────── */
@@ -233,6 +243,7 @@ export interface Database {
           hints?: string[];
           is_active?: boolean;
         };
+        Relationships: [];
       };
 
       /* ── user_progress ────────────────────────────────────── */
@@ -264,6 +275,7 @@ export interface Database {
           is_completed?: boolean;
           updated_at?: string;
         };
+        Relationships: [];
       };
 
       /* ── lesson_sessions ──────────────────────────────────── */
@@ -303,6 +315,7 @@ export interface Database {
           time_taken_seconds?: number | null;
           completed_at?: string | null;
         };
+        Relationships: [];
       };
 
       /* ── question_attempts ────────────────────────────────── */
@@ -340,6 +353,7 @@ export interface Database {
           time_taken_ms?: number | null;
           hint_used?: boolean;
         };
+        Relationships: [];
       };
 
       /* ── achievements ─────────────────────────────────────── */
@@ -379,6 +393,7 @@ export interface Database {
           condition_value?: number;
           is_active?: boolean;
         };
+        Relationships: [];
       };
 
       /* ── user_achievements ────────────────────────────────── */
@@ -395,7 +410,10 @@ export interface Database {
           achievement_id: string;
           earned_at?: string;
         };
-        Update: never;
+        Update: {
+          earned_at?: string;
+        };
+        Relationships: [];
       };
 
       /* ── daily_challenges ─────────────────────────────────── */
@@ -419,35 +437,51 @@ export interface Database {
           template_ids?: string[];
           bonus_xp?: number;
         };
+        Relationships: [];
       };
 
       /* ── survey_responses ─────────────────────────────────── */
       survey_responses: {
         Row: {
           id: string;
-          participant_id: string;
-          survey_type: 'post';
-          responses: Json;
+          user_id: string | null;
+          q1: number | null;
+          q2: number | null;
+          q3: number | null;
+          q4: number | null;
+          q5: number | null;
+          open_text: string | null;
           submitted_at: string;
         };
         Insert: {
           id?: string;
-          participant_id: string;
-          survey_type?: 'post';
-          responses: Json;
+          user_id?: string | null;
+          q1?: number | null;
+          q2?: number | null;
+          q3?: number | null;
+          q4?: number | null;
+          q5?: number | null;
+          open_text?: string | null;
           submitted_at?: string;
         };
-        Update: never;
+        Update: {
+          q1?: number | null;
+          q2?: number | null;
+          q3?: number | null;
+          q4?: number | null;
+          q5?: number | null;
+          open_text?: string | null;
+        };
+        Relationships: [];
       };
     };
 
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: {
-      question_type: QuestionType;
-    };
+    Views: { [_ in never]: never };
+    Functions: { [_ in never]: never };
+    Enums: { [_ in never]: never };
+    CompositeTypes: { [_ in never]: never };
   };
-}
+};
 
 /* ── Shared enums ──────────────────────────────────────────── */
 export type QuestionType =

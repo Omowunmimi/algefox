@@ -103,15 +103,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Update aggregate stats
-    await supabase.rpc('increment_user_stats', {
-      p_user_id: user.id,
-      p_lessons: 1,
-      p_questions_answered: questionsTotal,
-      p_questions_correct: questionsCorrect,
-    }).throwOnError().then(() => {}).catch(() => {
-      // Graceful degradation if RPC doesn't exist yet
-    });
+    // Update aggregate stats (best-effort — RPC may not exist yet)
+    try {
+      await supabase.rpc('increment_user_stats' as never, {
+        p_user_id: user.id,
+        p_lessons: 1,
+        p_questions_answered: questionsTotal,
+        p_questions_correct: questionsCorrect,
+      } as never);
+    } catch {
+      // Graceful degradation if RPC doesn't exist in DB yet
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

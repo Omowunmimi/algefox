@@ -1,39 +1,249 @@
-/**
- * Lesson Screen — dynamic route
- * The core gameplay loop: question → feedback → next question.
- *
- * URL: /lesson/[sectionId]/[level]
- * e.g. /lesson/fractions-intro/5
- *
- * TODO: Implement lesson engine + question components (Epic 4)
- */
-import { Metadata } from 'next';
+'use client';
 
-interface Props {
-  params: Promise<{
-    sectionId: string;
-    level: string;
-  }>;
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import {
+  useLessonStore,
+  selectCurrentQuestion,
+  selectProgress,
+} from '@/stores/useLessonStore';
+import { useUserStore } from '@/stores/useUserStore';
+import { useAudioStore } from '@/stores/useAudioStore';
+import { useLesson } from '@/hooks/useLesson';
+import { Button } from '@/components/ui';
+import { QuestionRenderer } from '@/components/questions/QuestionRenderer';
+import { LessonHeader } from '@/components/lesson/LessonHeader';
+import { FeedbackOverlay } from '@/components/lesson/FeedbackOverlay';
+import { QuitConfirmModal } from '@/components/lesson/QuitConfirmModal';
+import { createClient } from '@/lib/supabase/client';
+
+/* ── Loading spinner ─────────────────────────────────────────── */
+
+function LoadingSpinner() {
+  return (
+    <div className="flex flex-col items-center justify-center gap-4 py-16">
+      <div
+        className="w-12 h-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin"
+        role="status"
+        aria-label="Loading"
+      />
+      <p className="font-ui text-gray-500 text-sm">Loading your lesson…</p>
+    </div>
+  );
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { sectionId, level } = await params;
-  return {
-    title: `Level ${level} — ${sectionId}`,
-  };
+/* ── Hearts empty screen ─────────────────────────────────────── */
+
+function HeartsEmptyScreen({ onQuit }: { onQuit: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-6 py-12 text-center px-4">
+      {/* Sad Ayo mascot placeholder */}
+      <div
+        className="text-7xl select-none"
+        role="img"
+        aria-label="Sad fox mascot"
+      >
+        🦊
+      </div>
+      <div>
+        <h2 className="font-display text-2xl font-bold text-gray-900 mb-2">
+          Oh no! You&apos;re out of hearts
+        </h2>
+        <p className="font-ui text-gray-500 text-sm">
+          Hearts refill every 30 minutes.
+          <br />
+          Come back soon!
+        </p>
+      </div>
+      <Button variant="primary" size="lg" onClick={onQuit} fullWidth>
+        Go Home
+      </Button>
+    </div>
+  );
 }
 
-export default async function LessonPage({ params }: Props) {
-  const { sectionId, level } = await params;
+/* ── Page ────────────────────────────────────────────────────── */
+
+export default function LessonPage() {
+  const params = useParams<{ sectionId: string; level: string }>();
+  const router = useRouter();
+
+  const sectionId = params.sectionId;
+  const level = parseInt(params.level, 10);
+
+  // Lesson initialisation hook — fetches templates, generates questions, inits store
+  const { isLoading: lessonLoading } = useLesson(sectionId, level);
+
+  // Store slices
+  const phase = useLessonStore((s) => s.phase);
+  const sectionTitle = useLessonStore((s) => s.sectionTitle);
+  const xpEarned = useLessonStore((s) => s.xpEarned);
+  const answers = useLessonStore((s) => s.answers);
+  const questionQueue = useLessonStore((s) => s.questionQueue);
+  const setPhase = useLessonStore((s) => s.setPhase);
+  const submitAnswer = useLessonStore((s) => s.submitAnswer);
+  const advanceQuestion = useLessonStore((s) => s.advanceQuestion);
+  const loseHeart = useLessonStore((s) => s.loseHeart);
+  const addXp = useLessonStore((s) => s.addXp);
+  const resetLesson = useLessonStore((s) => s.resetLesson);
+
+  const currentQuestion = useLessonStore(selectCurrentQuestion);
+  const progress = useLessonStore(selectProgress);
+
+  const userStats = useUserStore((s) => s.stats);
+  const loseHeartUser = useUserStore((s) => s.loseHeart);
+  const addXpUser = useUserStore((s) => s.addXp);
+
+  // Local UI state
+  const [showQuitModal, setShowQuitModal] = useState(false);
+
+  /* ── Phase: lesson complete → navigate to reward ─────────── */
+  useEffect(() => {
+    if (phase !== 'lesson_complete') return;
+
+    const correct = answers.filter((a) => a.isCorrect).length;
+    const total = questionQueue.length;
+    const xpToAward = xpEarned > 0 ? xpEarned : correct * 10;
+
+    // Award XP to user store
+    addXpUser(xpToAward);
+
+    // Best-effort: mark lesson session complete in Supabase
+    const markComplete = async () => {
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          await supabase
+            .from('lesson_sessions')
+            .update({
+              status: 'completed',
+              completed_at: new Date().toISOString(),
+            })
+            .eq('user_id', user.id)
+            .eq('status', 'in_progress');
+        }
+      } catch {
+        // Non-critical — ignore errors
+      }
+    };
+
+    void markComplete();
+
+    const searchParams = new URLSearchParams({
+      xp: String(xpToAward),
+      correct: String(correct),
+      total: String(total),
+      level: String(level),
+      sectionTitle,
+    });
+
+    router.push(`/reward?${searchParams.toString()}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  /* ── Answer handler ──────────────────────────────────────── */
+  const handleAnswer = useCallback(
+    (answer: string) => {
+      // Determine correctness before mutating store
+      const isCorrect =
+        answer.trim().toLowerCase() ===
+        (currentQuestion?.correctAnswer ?? '').trim().toLowerCase();
+
+      // Update store phase
+      submitAnswer(answer);
+
+      // Play sound
+      const audio = useAudioStore.getState();
+      audio.playSound(isCorrect ? 'correct' : 'incorrect');
+
+      if (!isCorrect) {
+        loseHeart();
+        loseHeartUser();
+
+        // If hearts will be exhausted, move to hearts_empty phase
+        const remainingHearts = (userStats?.hearts ?? 1) - 1;
+        if (remainingHearts <= 0) {
+          setPhase('hearts_empty');
+        }
+      } else {
+        const xpGain = 10;
+        addXp(xpGain);
+      }
+    },
+    [
+      currentQuestion,
+      submitAnswer,
+      loseHeart,
+      loseHeartUser,
+      addXp,
+      setPhase,
+      userStats?.hearts,
+    ],
+  );
+
+  /* ── Continue handler ────────────────────────────────────── */
+  const handleContinue = useCallback(() => {
+    advanceQuestion();
+    // lesson_complete phase change is caught by the useEffect above
+  }, [advanceQuestion]);
+
+  /* ── Quit handler ────────────────────────────────────────── */
+  const handleQuit = useCallback(() => {
+    resetLesson();
+    router.push('/home');
+  }, [resetLesson, router]);
+
+  /* ── Render ──────────────────────────────────────────────── */
+  const isInFeedback =
+    phase === 'feedback_correct' || phase === 'feedback_incorrect';
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="text-center">
-        <p className="font-display text-xl font-semibold text-gray-900">
-          {sectionId} — Level {level}
-        </p>
-        <p className="text-gray-500 font-ui mt-2">Lesson engine — coming soon</p>
-      </div>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <LessonHeader
+        current={progress.current}
+        total={progress.total}
+        hearts={userStats?.hearts ?? 5}
+        maxHearts={userStats?.maxHearts ?? 5}
+        sectionTitle={sectionTitle}
+        onClose={() => setShowQuitModal(true)}
+      />
+
+      {/* Main question area */}
+      <main className="flex-1 px-4 pt-20 pb-36 overflow-y-auto flex flex-col justify-center">
+        {(phase === 'loading' || lessonLoading) && <LoadingSpinner />}
+
+        {phase === 'question' && currentQuestion && (
+          <QuestionRenderer
+            question={currentQuestion}
+            onAnswer={handleAnswer}
+            disabled={false}
+            selectedAnswer={null}
+            isCorrect={null}
+          />
+        )}
+
+        {phase === 'hearts_empty' && (
+          <HeartsEmptyScreen onQuit={handleQuit} />
+        )}
+      </main>
+
+      {/* Feedback overlay — slides up from bottom */}
+      <FeedbackOverlay
+        isVisible={isInFeedback}
+        isCorrect={phase === 'feedback_correct'}
+        explanation={currentQuestion?.explanation ?? ''}
+        correctAnswer={currentQuestion?.correctAnswer}
+        onContinue={handleContinue}
+      />
+
+      <QuitConfirmModal
+        isOpen={showQuitModal}
+        onConfirm={handleQuit}
+        onCancel={() => setShowQuitModal(false)}
+      />
     </div>
   );
 }
