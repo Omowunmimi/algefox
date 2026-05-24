@@ -111,7 +111,7 @@ export function TrueFalse({
           disabled={disabled || answered}
           onClick={() => canTap && onAnswer('True')}
           className={cn(
-            'flex-1 min-h-[80px] rounded-2xl border-2 font-display font-bold text-2xl',
+            'flex-1 min-h-20 rounded-2xl border-2 font-display font-bold text-2xl',
             'transition-all duration-150 select-none flex items-center justify-center gap-2',
             getTrueClasses(trueState),
             (disabled || answered) && 'cursor-default',
@@ -129,7 +129,7 @@ export function TrueFalse({
           disabled={disabled || answered}
           onClick={() => canTap && onAnswer('False')}
           className={cn(
-            'flex-1 min-h-[80px] rounded-2xl border-2 font-display font-bold text-2xl',
+            'flex-1 min-h-20 rounded-2xl border-2 font-display font-bold text-2xl',
             'transition-all duration-150 select-none flex items-center justify-center gap-2',
             getFalseClasses(falseState),
             (disabled || answered) && 'cursor-default',

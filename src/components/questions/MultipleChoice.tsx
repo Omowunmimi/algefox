@@ -124,7 +124,7 @@ export function MultipleChoice({
               disabled={disabled || answered}
               onClick={() => !disabled && !answered && onAnswer(option)}
               className={cn(
-                'relative flex items-center gap-3 rounded-2xl border-2 p-4 min-h-[56px] text-left',
+                'relative flex items-center gap-3 rounded-2xl border-2 p-4 min-h-14 text-left',
                 'transition-colors duration-150 cursor-pointer select-none',
                 getOptionClasses(state),
                 (disabled || answered) && 'cursor-default',
@@ -133,7 +133,7 @@ export function MultipleChoice({
               {/* Option label circle */}
               <span
                 className={cn(
-                  'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
+                  'shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
                   'font-display font-bold text-sm transition-colors duration-150',
                   getLabelClasses(state),
                 )}
