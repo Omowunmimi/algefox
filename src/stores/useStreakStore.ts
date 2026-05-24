@@ -94,7 +94,6 @@ export const selectPracticedToday = (s: StreakState): boolean => {
 
 export const selectStreakAtRisk = (s: StreakState): boolean => {
   if (!s.lastActivityDate || s.currentStreak === 0) return false;
-  const today = new Date().toISOString().split('T')[0];
   // Risk = last activity was yesterday and user hasn't practiced today
   const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
   return s.lastActivityDate === yesterday;

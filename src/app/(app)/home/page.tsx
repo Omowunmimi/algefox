@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useUserStore } from '@/stores/useUserStore';
@@ -123,7 +123,7 @@ function StreakDailyBanner({ streak, practicedToday }: StreakDailyBannerProps) {
 /* ── Page ──────────────────────────────────────────────────── */
 export default function HomePage() {
   const profile = useUserStore((s) => s.profile);
-  const [sections, setSections] = useState<SectionProgress[]>(MOCK_SECTIONS);
+  const [sections] = useState<SectionProgress[]>(MOCK_SECTIONS);
   const currentStreak = useStreakStore((s) => s.currentStreak);
   const practicedToday = useStreakStore(selectPracticedToday);
 

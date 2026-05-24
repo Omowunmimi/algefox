@@ -3,7 +3,6 @@
 import { ReactNode, useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { InlineMath } from 'react-katex';
-import 'katex/dist/katex.min.css';
 import { cn } from '@/lib/utils/cn';
 import type { QuestionInstance } from '@/types/lesson.types';
 
@@ -53,7 +52,7 @@ export function FillBlank({
     if (!disabled && !answered) {
       inputRef.current?.focus();
     }
-  }, []);
+  }, [disabled, answered]);
 
   function handleSubmit() {
     const trimmed = inputValue.trim();
@@ -99,7 +98,7 @@ export function FillBlank({
           disabled={disabled || answered}
           placeholder="Type your answer..."
           className={cn(
-            'w-full border-2 rounded-xl px-4 py-4 min-h-[56px]',
+            'w-full border-2 rounded-xl px-4 py-4 min-h-14',
             'text-center font-display text-2xl text-gray-900',
             'transition-colors duration-150 outline-none',
             'placeholder:text-gray-300 placeholder:font-ui placeholder:text-base',
@@ -146,7 +145,7 @@ export function FillBlank({
           disabled={!canSubmit}
           onClick={handleSubmit}
           className={cn(
-            'w-full min-h-[56px] rounded-2xl font-display font-bold text-lg',
+            'w-full min-h-14 rounded-2xl font-display font-bold text-lg',
             'transition-all duration-150 select-none',
             canSubmit
               ? 'bg-primary text-white cursor-pointer'

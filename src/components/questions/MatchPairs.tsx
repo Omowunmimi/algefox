@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils/cn';
 import { Button } from '@/components/ui/Button';
@@ -43,7 +43,8 @@ export function MatchPairs({
   onAnswer,
   disabled = false,
   selectedAnswer = null,
-  isCorrect = null,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  isCorrect: _isCorrect = null,
 }: QuestionComponentProps) {
   const pairs: MatchPair[] = question.pairs ?? [];
 
@@ -61,11 +62,11 @@ export function MatchPairs({
   const leftItems = pairs.map((p) => p.left);
 
   // Build reverse map: right → left (for quick look-up)
-  const rightToLeft = new Map<string, string>();
-  matches.forEach((right, left) => rightToLeft.set(right, left));
-
-  // Index of a left item in the matches (for color assignment)
-  const leftIndex = (left: string) => leftItems.indexOf(left);
+  const rightToLeft = useMemo(() => {
+    const map = new Map<string, string>();
+    matches.forEach((right, left) => map.set(right, left));
+    return map;
+  }, [matches]);
 
   // Which color index does this matched left item get?
   const colorForLeft = (left: string): number => {
@@ -217,7 +218,7 @@ export function MatchPairs({
                 disabled={disabled && !answered}
                 onClick={() => !answered && handleLeftTap(left)}
                 className={cn(
-                  'relative rounded-xl border-2 p-3 min-h-[48px] text-center font-ui text-sm',
+                  'relative rounded-xl border-2 p-3 min-h-12 text-center font-ui text-sm',
                   'transition-colors duration-150 select-none',
                   getLeftClasses(left),
                   answered ? 'cursor-default' : 'cursor-pointer',
@@ -248,7 +249,7 @@ export function MatchPairs({
                 disabled={disabled && !answered}
                 onClick={() => !answered && handleRightTap(right)}
                 className={cn(
-                  'relative rounded-xl border-2 p-3 min-h-[48px] text-center font-ui text-sm',
+                  'relative rounded-xl border-2 p-3 min-h-12 text-center font-ui text-sm',
                   'transition-colors duration-150 select-none',
                   getRightClasses(right),
                   answered ? 'cursor-default' : 'cursor-pointer',

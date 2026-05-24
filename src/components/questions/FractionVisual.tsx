@@ -3,7 +3,7 @@
 import { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { InlineMath } from 'react-katex';
-import 'katex/dist/katex.min.css';
+// import 'katex/dist/katex.min.css';
 import { cn } from '@/lib/utils/cn';
 import type { QuestionInstance, FractionVisualData } from '@/types/lesson.types';
 
@@ -135,7 +135,8 @@ export function FractionVisual({
   onAnswer,
   disabled = false,
   selectedAnswer = null,
-  isCorrect = null,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  isCorrect: _isCorrect = null,
 }: QuestionComponentProps) {
   const options = question.options ?? [];
   const answered = selectedAnswer !== null;

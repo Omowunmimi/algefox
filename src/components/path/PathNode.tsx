@@ -6,7 +6,6 @@ import { Lock } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 interface PathNodeProps {
-  sectionId: string;
   sectionSlug: string;
   sectionTitle: string;
   subject: 'fractions' | 'algebra';
@@ -35,7 +34,6 @@ function AlgebraIcon() {
 }
 
 export function PathNode({
-  sectionId,
   sectionSlug,
   sectionTitle,
   subject,
@@ -120,7 +118,7 @@ export function PathNode({
       </motion.button>
 
       {/* Label below */}
-      <div className="flex flex-col items-center gap-0.5 text-center max-w-[96px]">
+      <div className="flex flex-col items-center gap-0.5 text-center max-w-24">
         <span
           className={cn(
             'font-ui text-xs font-semibold leading-tight line-clamp-2 text-center',

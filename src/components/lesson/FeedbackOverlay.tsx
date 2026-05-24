@@ -45,7 +45,6 @@ export function FeedbackOverlay({
   explanation,
   correctAnswer,
   onContinue,
-  mascotExpression,
 }: FeedbackOverlayProps) {
   // Stable random phrases per render (only changes when isVisible flips on)
   const ayoPhrase = useMemo(

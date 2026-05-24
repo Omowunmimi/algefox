@@ -3,7 +3,6 @@
 import { useEffect, useRef } from 'react';
 import type { SectionProgress } from '@/types/lesson.types';
 import { PathNode } from './PathNode';
-import { cn } from '@/lib/utils/cn';
 
 interface PathMapProps {
   sections: SectionProgress[];
@@ -57,7 +56,6 @@ export function PathMap({ sections, currentSectionId }: PathMapProps) {
               {/* Node */}
               <div className="py-5">
                 <PathNode
-                  sectionId={section.sectionId}
                   sectionSlug={section.sectionSlug}
                   sectionTitle={section.sectionTitle}
                   subject={subject}

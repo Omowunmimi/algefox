@@ -111,7 +111,8 @@ function renderEye(
   eyeR: number = 5,
 ): React.ReactNode {
   const pupilR = 2.5 * (config.pupilScale ?? 1);
-  const flip = cx < 60 ? 1 : -1; // left eye vs right (unused currently)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _flip = cx < 60 ? 1 : -1; // left eye vs right (unused currently)
 
   switch (config.shape) {
     case 'circle':

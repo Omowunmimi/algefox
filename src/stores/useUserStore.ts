@@ -48,7 +48,7 @@ interface UserState {
 /* ── Store ─────────────────────────────────────────────────── */
 export const useUserStore = create<UserState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       profile: null,
       stats: null,
       isLoading: false,

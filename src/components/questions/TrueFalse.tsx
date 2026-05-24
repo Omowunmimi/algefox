@@ -3,7 +3,7 @@
 import { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { InlineMath } from 'react-katex';
-import 'katex/dist/katex.min.css';
+// import 'katex/dist/katex.min.css';
 import { cn } from '@/lib/utils/cn';
 import type { QuestionInstance } from '@/types/lesson.types';
 
@@ -42,7 +42,8 @@ export function TrueFalse({
   onAnswer,
   disabled = false,
   selectedAnswer = null,
-  isCorrect = null,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  isCorrect: _isCorrect = null,
 }: QuestionComponentProps) {
   const answered = selectedAnswer !== null;
   // correctAnswer is 'True' or 'False'

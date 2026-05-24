@@ -44,6 +44,7 @@ const SCALE_LABELS: Record<number, string> = {
 
 /* ── Scale buttons row ───────────────────────────────────────── */
 function LikertScale({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   questionId,
   value,
   onChange,
@@ -129,8 +130,11 @@ export default function PostSurveyPage() {
       setSubmitted(true);
       // Redirect to profile after a brief moment
       setTimeout(() => router.push('/profile'), 1800);
-    } catch (err) {
-      setError('Something went wrong. Please try again.');
+    } catch (
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      _err: unknown
+    ) {
+      setError('Something went wrong. Please try again');
       setSubmitting(false);
     }
   }

@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       reason: string;
     };
 
-    const { sessionId, xpAmount, reason } = body;
+    const { sessionId, xpAmount } = body;
 
     if (!sessionId || typeof xpAmount !== 'number' || xpAmount < 0) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });

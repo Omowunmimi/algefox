@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils/cn';
 import { Button } from '@/components/ui/Button';
@@ -42,9 +42,10 @@ export function Ordering({
   onAnswer,
   disabled = false,
   selectedAnswer = null,
-  isCorrect = null,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  isCorrect: _isCorrect = null,
 }: QuestionComponentProps) {
-  const items: DragItem[] = question.items ?? [];
+  const items: DragItem[] = useMemo(() => question.items ?? [], [question.items]);
 
   const [pool, setPool] = useState<DragItem[]>([]);
   const [answer, setAnswer] = useState<DragItem[]>([]);
@@ -105,7 +106,7 @@ export function Ordering({
         <p className="font-ui text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">
           Items
         </p>
-        <div className="min-h-[56px] bg-gray-50 rounded-2xl p-2 flex flex-wrap gap-2 border-2 border-gray-100">
+        <div className="min-h-14 bg-gray-50 rounded-2xl p-2 flex flex-wrap gap-2 border-2 border-gray-100">
           <AnimatePresence mode="popLayout">
             {pool.map((item) => (
               <motion.button
@@ -121,7 +122,7 @@ export function Ordering({
                 onClick={() => moveToAnswer(item)}
                 className={cn(
                   'bg-white border-2 border-gray-200 rounded-xl px-4 py-3 font-ui text-sm text-gray-700',
-                  'min-h-[48px] select-none transition-colors duration-150',
+                    'min-h-12 select-none transition-colors duration-150',
                   disabled ? 'cursor-default' : 'cursor-pointer hover:border-primary hover:bg-primary-lighter',
                 )}
               >
@@ -150,7 +151,7 @@ export function Ordering({
           }
           transition={{ duration: 0.25 }}
           className={cn(
-            'min-h-[56px] rounded-2xl p-2 flex flex-wrap gap-2 border-2',
+              'min-h-14 rounded-2xl p-2 flex flex-wrap gap-2 border-2',
             flash === 'correct' ? 'border-success' : flash === 'wrong' ? 'border-error' : 'border-gray-200',
           )}
         >
@@ -167,7 +168,7 @@ export function Ordering({
                 disabled={disabled || !!flash}
                 onClick={() => !flash && moveToPool(item)}
                 className={cn(
-                  'border-2 rounded-xl px-4 py-3 font-ui text-sm min-h-[48px] select-none',
+                    'border-2 rounded-xl px-4 py-3 font-ui text-sm min-h-12 select-none',
                   'transition-colors duration-150 flex items-center gap-1.5',
                   flash === 'correct'
                     ? 'bg-success-bg border-success text-success-dark cursor-default'

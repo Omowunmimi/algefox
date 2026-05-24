@@ -99,8 +99,10 @@ export function AlgebraBalance({
   );
 
   // Pan centers (below beam ends)
-  const leftPanCenter = { x: leftBeamEnd.x, y: leftBeamEnd.y + PAN_DROP };
-  const rightPanCenter = { x: rightBeamEnd.x, y: rightBeamEnd.y + PAN_DROP };
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _leftPanCenter = { x: leftBeamEnd.x, y: leftBeamEnd.y + PAN_DROP };
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _rightPanCenter = { x: rightBeamEnd.x, y: rightBeamEnd.y + PAN_DROP };
 
   const leftLabel = stripLatex(leftExpression);
   const rightLabel = stripLatex(rightExpression);

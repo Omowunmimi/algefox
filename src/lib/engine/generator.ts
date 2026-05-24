@@ -11,7 +11,6 @@ import {
   shuffle,
   simplifyFraction,
   gcd,
-  lcm,
   addFractions,
   multiplyFractions,
 } from '@/lib/utils/math';
@@ -228,9 +227,8 @@ function detectDomain(answer: string): AnswerDomain {
 }
 
 /* ── Single question generation ───────────────────────────────────────────── */
-
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let _instanceCounter = 0;
-
 /**
  * Generates a single question instance from a template.
  */

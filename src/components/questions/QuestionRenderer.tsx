@@ -3,7 +3,7 @@
 import { ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { InlineMath } from 'react-katex';
-import 'katex/dist/katex.min.css';
+// import 'katex/dist/katex.min.css';
 import type { QuestionInstance } from '@/types/lesson.types';
 import { MultipleChoice } from './MultipleChoice';
 import { TrueFalse } from './TrueFalse';

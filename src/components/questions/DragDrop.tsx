@@ -3,7 +3,6 @@
 import { ReactNode, useState } from 'react';
 import { motion } from 'framer-motion';
 import { InlineMath } from 'react-katex';
-import 'katex/dist/katex.min.css';
 import {
   DndContext,
   closestCenter,
@@ -68,7 +67,6 @@ interface SortableItemProps {
 function SortableItem({
   item,
   isDraggingOverlay = false,
-  isCorrect,
   correctOrderIds,
   index,
   answered,
@@ -98,7 +96,7 @@ function SortableItem({
       {...attributes}
       {...listeners}
       className={cn(
-        'flex items-center gap-3 bg-white border-2 border-gray-200 rounded-xl p-3 min-h-[56px]',
+        'flex items-center gap-3 bg-white border-2 border-gray-200 rounded-xl p-3 min-h-14',
         'font-ui text-base text-gray-800 select-none cursor-grab active:cursor-grabbing',
         'transition-colors duration-150',
         feedbackClass,
@@ -106,7 +104,7 @@ function SortableItem({
       )}
     >
       {/* Drag handle dots */}
-      <span className="text-gray-300 select-none flex-shrink-0 flex flex-col gap-0.5">
+      <span className="text-gray-300 select-none shrink-0 flex flex-col gap-0.5">
         <span className="flex gap-0.5">
           <span className="w-1.5 h-1.5 bg-gray-300 rounded-full" />
           <span className="w-1.5 h-1.5 bg-gray-300 rounded-full" />
@@ -222,9 +220,9 @@ export function DragDrop({
           {activeItem && (
             <div
               style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.15)', transform: 'scale(1.05)' }}
-              className="flex items-center gap-3 bg-white border-2 border-primary rounded-xl p-3 min-h-[56px] font-ui text-base text-gray-800 select-none cursor-grabbing"
+              className="flex items-center gap-3 bg-white border-2 border-primary rounded-xl p-3 min-h-14 font-ui text-base text-gray-800 select-none cursor-grabbing"
             >
-              <span className="flex-shrink-0 flex flex-col gap-0.5">
+              <span className="shrink-0 flex flex-col gap-0.5">
                 <span className="flex gap-0.5">
                   <span className="w-1.5 h-1.5 bg-gray-300 rounded-full" />
                   <span className="w-1.5 h-1.5 bg-gray-300 rounded-full" />
@@ -248,7 +246,7 @@ export function DragDrop({
           disabled={!canCheck}
           onClick={handleCheck}
           className={cn(
-            'w-full min-h-[56px] rounded-2xl font-display font-bold text-lg',
+            'w-full min-h-14 rounded-2xl font-display font-bold text-lg',
             'transition-all duration-150 select-none',
             canCheck
               ? 'bg-primary text-white cursor-pointer'

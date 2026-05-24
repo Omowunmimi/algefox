@@ -24,6 +24,7 @@ export function getDifficultyBand(level: number): DifficultyBand {
  * How many questions to generate for a given level.
  * Always 10 for now.
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function getQuestionsForLevel(_level: number): number {
   return 10;
 }
