@@ -6,6 +6,18 @@ import { useGameStore } from '@/stores/useGameStore';
 import type { Achievement } from '@/types/gamification.types';
 import type { UserStats } from '@/stores/useUserStore';
 
+/* ── Fallback achievements used when DB table is empty ──────── */
+const FALLBACK_ACHIEVEMENTS: Achievement[] = [
+  { id: 'local-1', slug: 'first-lesson', title: 'First Step', description: 'Complete your first lesson', icon: '🎯', category: 'completion', xpReward: 50, conditionType: 'lessons_completed', conditionValue: 1, earned: false },
+  { id: 'local-2', slug: 'streak-3', title: 'On a Roll', description: 'Maintain a 3-day streak', icon: '🔥', category: 'streak', xpReward: 75, conditionType: 'streak_days', conditionValue: 3, earned: false },
+  { id: 'local-3', slug: 'streak-7', title: 'Week Warrior', description: '7-day streak!', icon: '🌟', category: 'streak', xpReward: 150, conditionType: 'streak_days', conditionValue: 7, earned: false },
+  { id: 'local-4', slug: 'perfect-lesson', title: 'Perfect Score', description: 'Complete a lesson with no mistakes', icon: '💯', category: 'accuracy', xpReward: 100, conditionType: 'perfect_lesson', conditionValue: 1, earned: false },
+  { id: 'local-5', slug: 'level-10', title: 'Level 10 Legend', description: 'Reach Level 10', icon: '🏆', category: 'mastery', xpReward: 200, conditionType: 'level', conditionValue: 10, earned: false },
+  { id: 'local-6', slug: 'xp-500', title: 'XP Collector', description: 'Earn 500 total XP', icon: '⚡', category: 'mastery', xpReward: 50, conditionType: 'total_xp', conditionValue: 500, earned: false },
+  { id: 'local-7', slug: 'questions-50', title: 'Question Master', description: 'Answer 50 questions', icon: '❓', category: 'completion', xpReward: 100, conditionType: 'questions_answered', conditionValue: 50, earned: false },
+  { id: 'local-8', slug: 'accuracy-90', title: 'Sharp Mind', description: 'Maintain 90% accuracy over 10+ questions', icon: '🎓', category: 'accuracy', xpReward: 150, conditionType: 'accuracy_pct', conditionValue: 90, earned: false },
+];
+
 /* ── Types ─────────────────────────────────────────────────── */
 
 interface DbAchievement {
@@ -78,7 +90,8 @@ export function useAchievements(): UseAchievementsReturn {
 
         const earnedMap = new Map(earned.map((ua) => [ua.achievement_id, ua.earned_at]));
 
-        const merged: Achievement[] = dbAchievements.map((row) => ({
+        // If the achievements table is empty/not seeded, fall back to local definitions
+        const sourceList = dbAchievements.length > 0 ? dbAchievements.map((row) => ({
           id: row.id,
           slug: row.slug,
           title: row.title,
@@ -90,9 +103,9 @@ export function useAchievements(): UseAchievementsReturn {
           conditionValue: row.condition_value,
           earned: earnedMap.has(row.id),
           earnedAt: earnedMap.get(row.id),
-        }));
+        })) : FALLBACK_ACHIEVEMENTS;
 
-        setAchievements(merged);
+        setAchievements(sourceList);
       } catch {
         // Tables may not exist yet — silently fall back to empty state
       } finally {
@@ -163,14 +176,17 @@ export function useAchievements(): UseAchievementsReturn {
       // Persist to DB and fire toasts (best-effort — errors are non-fatal)
       await Promise.allSettled(
         newlyUnlocked.map(async (achievement) => {
-          try {
-            await supabase.from('user_achievements').insert({
-              user_id: user.id,
-              achievement_id: achievement.id,
-              earned_at: new Date().toISOString(),
-            });
-          } catch {
-            // Non-fatal — proceed to fire toast regardless
+          // Only write to DB if it's a real DB achievement (not a local fallback)
+          if (!achievement.id.startsWith('local-')) {
+            try {
+              await supabase.from('user_achievements').insert({
+                user_id: user.id,
+                achievement_id: achievement.id,
+                earned_at: new Date().toISOString(),
+              });
+            } catch {
+              // Non-fatal
+            }
           }
           useGameStore.getState().unlockAchievement(achievement);
         }),

@@ -166,11 +166,7 @@ export const useLessonStore = create<LessonState>()((set, get) => ({
 export const selectCurrentQuestion = (s: LessonState): QuestionInstance | null =>
   s.questionQueue[s.currentIndex] ?? null;
 
-export const selectProgress = (s: LessonState) => ({
-  current: s.currentIndex + 1,
-  total: s.questionQueue.length,
-  percent: s.questionQueue.length > 0 ? (s.currentIndex / s.questionQueue.length) * 100 : 0,
-});
+// selectProgress removed — use individual primitives to avoid infinite-loop snapshots
 
 export const selectAccuracy = (s: LessonState) => {
   if (s.answers.length === 0) return 1;

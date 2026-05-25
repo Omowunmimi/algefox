@@ -6,6 +6,9 @@ import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { Button } from '@/components/ui';
 import { useLessonStore } from '@/stores/useLessonStore';
+import { useUserStore } from '@/stores/useUserStore';
+import { useStreakStore } from '@/stores/useStreakStore';
+import { useAchievements } from '@/hooks/useAchievements';
 
 /* ── Star rating ─────────────────────────────────────────────── */
 
@@ -20,7 +23,7 @@ function StarRating({ accuracy }: { accuracy: number }) {
           animate={{ scale: 1, rotate: 0 }}
           transition={{
             delay: 0.4 + s * 0.15,
-            type: 'spring',
+            type: 'spring' as const,
             stiffness: 400,
             damping: 15,
           }}
@@ -45,6 +48,10 @@ function RewardContent() {
   const sectionIdFromStore = useLessonStore((s) => s.sectionId);
   const levelFromStore = useLessonStore((s) => s.level);
 
+  const userStats = useUserStore((s) => s.stats);
+  const currentStreak = useStreakStore((s) => s.currentStreak);
+  const { checkAchievements } = useAchievements();
+
   // Parse query params — fall back to store values
   const xp = Number(searchParams.get('xp') ?? lessonXp);
   const correct = Number(
@@ -52,19 +59,19 @@ function RewardContent() {
   );
   const total = Number(searchParams.get('total') ?? (lessonQueue.length || 10));
   const level = Number(searchParams.get('level') ?? levelFromStore);
+  const sectionId = searchParams.get('sectionId') ?? sectionIdFromStore ?? 'fractions-intro';
   const sectionTitle =
     searchParams.get('sectionTitle') ??
-    (sectionIdFromStore ?? 'Lesson')
+    sectionId
       .split('-')
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(' ');
 
   const accuracy = total > 0 ? correct / total : 0;
+  const wasPerfect = correct === total && total > 0;
+  const nextLevelUrl = `/lesson/${sectionId}/${level + 1}`;
 
-  // Lesson URL for "Practice Again"
-  const practiceUrl = `/lesson/${searchParams.get('sectionId') ?? sectionIdFromStore ?? 'algebra-intro'}/${level}`;
-
-  /* ── Confetti on mount ─────────────────────────────────────── */
+  /* ── Confetti + achievement check on mount ─────────────────── */
   useEffect(() => {
     confetti({
       particleCount: 100,
@@ -72,6 +79,12 @@ function RewardContent() {
       origin: { y: 0.6 },
       colors: ['#F97316', '#F59E0B', '#7C3AED', '#10B981', '#EC4899'],
     });
+
+    // Check achievements with the latest stats
+    if (userStats) {
+      void checkAchievements(userStats, currentStreak, wasPerfect);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ── Stagger delays ────────────────────────────────────────── */
@@ -87,11 +100,7 @@ function RewardContent() {
     <div className="min-h-screen bg-gradient-to-b from-primary to-orange-600 flex flex-col items-center justify-center px-4 py-12">
       {/* Mascot */}
       <motion.div {...fadeUp(delays[0])} className="mb-4">
-        <div
-          className="text-8xl select-none"
-          role="img"
-          aria-label="Celebrating fox mascot"
-        >
+        <div className="text-8xl select-none" role="img" aria-label="Celebrating fox mascot">
           🦊
         </div>
       </motion.div>
@@ -123,16 +132,12 @@ function RewardContent() {
       >
         <div className="flex items-center justify-between font-ui text-white">
           <span className="text-white/80 text-sm">Correct answers</span>
-          <span className="font-bold text-lg">
-            {correct}/{total}
-          </span>
+          <span className="font-bold text-lg">{correct}/{total}</span>
         </div>
         <div className="h-px bg-white/20" />
         <div className="flex items-center justify-between font-ui text-white">
           <span className="text-white/80 text-sm">Accuracy</span>
-          <span className="font-bold text-lg">
-            {Math.round(accuracy * 100)}%
-          </span>
+          <span className="font-bold text-lg">{Math.round(accuracy * 100)}%</span>
         </div>
         <div className="h-px bg-white/20" />
         <div className="flex items-center justify-between font-ui text-white">
@@ -150,19 +155,19 @@ function RewardContent() {
           variant="gold"
           size="lg"
           fullWidth
-          onClick={() => router.push('/home')}
+          onClick={() => router.push(nextLevelUrl)}
           style={{ boxShadow: 'var(--shadow-physical-gold)' }}
         >
-          Continue
+          Next Level →
         </Button>
         <Button
           variant="outline"
           size="lg"
           fullWidth
           className="border-white/60 text-white hover:bg-white/10"
-          onClick={() => router.push(practiceUrl)}
+          onClick={() => router.push('/home')}
         >
-          Practice Again
+          Back to Home
         </Button>
       </motion.div>
     </div>

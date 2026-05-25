@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   useLessonStore,
   selectCurrentQuestion,
-  selectProgress,
 } from '@/stores/useLessonStore';
 import { useUserStore } from '@/stores/useUserStore';
 import { useAudioStore } from '@/stores/useAudioStore';
@@ -88,11 +87,13 @@ export default function LessonPage() {
   const resetLesson = useLessonStore((s) => s.resetLesson);
 
   const currentQuestion = useLessonStore(selectCurrentQuestion);
-  const progress = useLessonStore(selectProgress);
+  const currentIndex = useLessonStore((s) => s.currentIndex);
+  const queueLength = useLessonStore((s) => s.questionQueue.length);
 
   const userStats = useUserStore((s) => s.stats);
   const loseHeartUser = useUserStore((s) => s.loseHeart);
   const addXpUser = useUserStore((s) => s.addXp);
+  const updateStats = useUserStore((s) => s.updateStats);
 
   // Local UI state
   const [showQuitModal, setShowQuitModal] = useState(false);
@@ -105,28 +106,41 @@ export default function LessonPage() {
     const total = questionQueue.length;
     const xpToAward = xpEarned > 0 ? xpEarned : correct * 10;
 
-    // Award XP to user store
+    // Award XP and update lesson stats in local store immediately
     addXpUser(xpToAward);
+    updateStats({
+      lessonsCompleted: (userStats?.lessonsCompleted ?? 0) + 1,
+      questionsAnswered: (userStats?.questionsAnswered ?? 0) + total,
+      questionsCorrect: (userStats?.questionsCorrect ?? 0) + correct,
+    });
 
-    // Best-effort: mark lesson session complete in Supabase
+    // Best-effort: call complete-level API to update DB progress
+    const sessionId = useLessonStore.getState().sessionId;
+    const heartsLost = useLessonStore.getState().heartsLost;
+    const startedAt = useLessonStore.getState().startedAt;
+
     const markComplete = async () => {
       try {
-        const supabase = createClient();
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (user) {
-          await supabase
-            .from('lesson_sessions')
-            .update({
-              status: 'completed',
-              completed_at: new Date().toISOString(),
-            })
-            .eq('user_id', user.id)
-            .eq('status', 'in_progress');
+        if (sessionId) {
+          await fetch('/api/complete-level', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId,
+              sectionId,
+              level,
+              xpEarned: xpToAward,
+              heartsLost,
+              questionsTotal: total,
+              questionsCorrect: correct,
+              timeTakenSeconds: startedAt
+                ? Math.floor((Date.now() - startedAt) / 1000)
+                : 0,
+            }),
+          });
         }
       } catch {
-        // Non-critical — ignore errors
+        // Non-critical — local store already updated
       }
     };
 
@@ -137,6 +151,7 @@ export default function LessonPage() {
       correct: String(correct),
       total: String(total),
       level: String(level),
+      sectionId,
       sectionTitle,
     });
 
@@ -164,7 +179,7 @@ export default function LessonPage() {
         loseHeartUser();
 
         // If hearts will be exhausted, move to hearts_empty phase
-        const remainingHearts = (userStats?.hearts ?? 1) - 1;
+        const remainingHearts = (userStats?.hearts ?? 5) - 1;
         if (remainingHearts <= 0) {
           setPhase('hearts_empty');
         }
@@ -203,8 +218,8 @@ export default function LessonPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <LessonHeader
-        current={progress.current}
-        total={progress.total}
+        current={currentIndex + 1}
+        total={queueLength}
         hearts={userStats?.hearts ?? 5}
         maxHearts={userStats?.maxHearts ?? 5}
         sectionTitle={sectionTitle}
