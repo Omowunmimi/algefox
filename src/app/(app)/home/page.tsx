@@ -2,10 +2,10 @@
 
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Flame, Zap, Medal, Target, Trophy, TreePine, Waves, Atom, Mountain } from 'lucide-react';
+import { Flame, Zap, BarChart2, Target, ChevronRight } from 'lucide-react';
+import Image from 'next/image';
 import { useUserStore } from '@/stores/useUserStore';
 import { useStreakStore, selectPracticedToday } from '@/stores/useStreakStore';
-import { FoxyImage } from '@/components/mascot/FoxyImage';
 import { WorldSection } from '@/components/world/WorldSection';
 import type { SectionProgress } from '@/types/lesson.types';
 
@@ -35,125 +35,29 @@ function buildSections(completedSections: Record<string, number>): SectionProgre
   });
 }
 
-/* ── Greeting helpers ──────────────────────────────────────── */
-function getTimeGreeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
-}
-
-function getFoxyMessage(streak: number, practicedToday: boolean) {
-  if (practicedToday)
-    return { text: 'Amazing! You practised today!', expression: 'celebrating' as const };
-  if (streak > 6)
-    return { text: `${streak}-day streak — you're on fire!`, expression: 'excited' as const };
-  if (streak > 2)
-    return { text: `${streak}-day streak! Keep it going!`, expression: 'encouraging' as const };
-  return { text: "Ready for today's adventure?", expression: 'happy' as const };
-}
-
-/* ── Stat pill ─────────────────────────────────────────────── */
-function StatPill({
+/* ── Stat box ──────────────────────────────────────────────── */
+function StatBox({
   icon,
   value,
   label,
+  bg,
 }: {
   icon: React.ReactNode;
   value: string | number;
   label: string;
+  bg: string;
 }) {
   return (
-    <div
-      className="flex items-center gap-2 rounded-full px-3 py-2"
-      style={{ background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)' }}
-    >
-      {icon}
-      <div className="flex flex-col leading-none">
-        <span className="font-display text-sm font-bold text-white">{value}</span>
-        <span className="font-ui text-[10px] text-white/70">{label}</span>
-      </div>
+    <div className="rounded-2xl p-3 text-center flex flex-col items-center gap-1" style={{ background: bg }}>
+      <div className="w-9 h-9 flex items-center justify-center">{icon}</div>
+      <p className="font-display text-xl font-bold text-gray-900 leading-none">{value}</p>
+      <p className="font-ui text-xs text-gray-500">{label}</p>
     </div>
   );
 }
 
-/* ── Hero greeting banner ──────────────────────────────────── */
-function HeroGreeting({
-  name, streak, practicedToday, xp, level,
-}: {
-  name: string;
-  streak: number;
-  practicedToday: boolean;
-  xp: number;
-  level: number;
-}) {
-  const foxy = getFoxyMessage(streak, practicedToday);
-  const greeting = getTimeGreeting();
-
-  return (
-    <div
-      className="relative overflow-hidden"
-      style={{ background: 'linear-gradient(160deg, #8A2BE2 0%, #7A1CAC 55%, #5B1483 100%)' }}
-    >
-      {/* Decorative orbs */}
-      <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/5 pointer-events-none" />
-      <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-white/5 pointer-events-none" />
-
-      {/* Greeting row */}
-      <div className="flex items-end justify-between px-5 pt-5 gap-2">
-        <div className="flex-1 pb-3">
-          <p className="font-ui text-white/70 text-sm">{greeting},</p>
-          <h1 className="font-display text-2xl font-bold text-white leading-tight mt-0.5">
-            {name}!
-          </h1>
-          <p className="font-ui text-sm text-white/85 mt-1.5 max-w-[220px] leading-snug">
-            {foxy.text}
-          </p>
-        </div>
-        <motion.div
-          animate={{ y: [0, -6, 0] }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-          className="shrink-0 -mb-1"
-        >
-          <FoxyImage expression={foxy.expression} size={105} />
-        </motion.div>
-      </div>
-
-      {/* Stats pills row */}
-      <div className="flex gap-2 px-5 pb-4 overflow-x-auto scrollbar-hide">
-        <StatPill
-          icon={<Flame size={16} fill="#FB923C" stroke="#FB923C" strokeWidth={0} />}
-          value={streak}
-          label="Streak"
-        />
-        <StatPill
-          icon={<Zap size={16} fill="#FCD34D" stroke="#FCD34D" strokeWidth={0} />}
-          value={xp}
-          label="XP"
-        />
-        <StatPill
-          icon={<Medal size={16} className="text-amber-300" />}
-          value={`Lv.${level}`}
-          label="Level"
-        />
-      </div>
-    </div>
-  );
-}
-
-/* ── World section icon ────────────────────────────────────── */
-function WorldIcon({ slug }: { slug: string }) {
-  const map: Record<string, React.ReactNode> = {
-    'fractions-intro':      <TreePine size={22} className="text-emerald-300" />,
-    'fractions-operations': <Waves    size={22} className="text-sky-300" />,
-    'algebra-intro':        <Atom     size={22} className="text-violet-300" />,
-    'algebra-expressions':  <Mountain size={22} className="text-orange-300" />,
-  };
-  return <>{map[slug] ?? <Zap size={22} className="text-white/70" />}</>;
-}
-
-/* ── Current lesson module card ────────────────────────────── */
-function ModuleCard({
+/* ── Continue learning banner (mascot breaks out of left edge) ─ */
+function ContinueLearningBanner({
   section,
   onPress,
 }: {
@@ -162,50 +66,161 @@ function ModuleCard({
 }) {
   if (!section) return null;
 
-  const moduleLabels: Record<string, string> = {
-    'fractions-intro':      'Module 1 • Fractions',
-    'fractions-operations': 'Module 2 • Fractions',
-    'algebra-intro':        'Module 3 • Algebra',
-    'algebra-expressions':  'Module 4 • Algebra',
-  };
-  const moduleLabel = moduleLabels[section.sectionSlug] ?? 'Module';
+  return (
+    <div
+      className="relative rounded-3xl overflow-hidden"
+      style={{ background: 'linear-gradient(135deg, #8A2BE2 0%, #5B1483 100%)' }}
+    >
+      {/* Mascot breaking out of left edge */}
+      <div className="absolute -left-3 bottom-0 pointer-events-none select-none">
+        <Image
+          src="/mascot/foxy-full.png"
+          alt="Foxy the fox"
+          width={150}
+          height={150}
+          className="object-contain"
+          priority
+        />
+      </div>
+
+      {/* Text + CTA pushed to the right */}
+      <div className="ml-36 p-4">
+        <p className="font-ui text-sm text-white/75">Continue Learning</p>
+        <h2 className="font-display text-xl font-bold text-white mt-1 leading-snug">
+          {section.sectionTitle}
+        </h2>
+
+        {/* Progress bar */}
+        <div className="w-full h-2.5 rounded-full mt-3 overflow-hidden" style={{ background: 'rgba(255,255,255,0.25)' }}>
+          <motion.div
+            className="h-full rounded-full bg-white"
+            initial={{ width: 0 }}
+            animate={{ width: `${Math.max(section.progressPercent * 100, 4)}%` }}
+            transition={{ duration: 0.7, ease: 'easeOut', delay: 0.3 }}
+          />
+        </div>
+
+        {/* Button */}
+        <motion.button
+          onClick={onPress}
+          className="mt-4 w-full font-display font-bold text-purple-700 rounded-2xl py-2.5"
+          style={{ background: '#FFFFFF' }}
+          whileTap={{ scale: 0.97 }}
+        >
+          Continue Lesson
+        </motion.button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Progress card ─────────────────────────────────────────── */
+function ProgressCard({ sections }: { sections: SectionProgress[] }) {
+  const visible = sections.filter((s) => s.isUnlocked).slice(0, 3);
+  if (visible.length === 0) return null;
 
   return (
-    <div className="px-4 py-3">
-      <motion.button
-        className="w-full flex items-center gap-3 rounded-2xl overflow-hidden text-left"
-        style={{
-          background: '#1a1033',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
-        }}
-        whileTap={{ scale: 0.98 }}
-        onClick={onPress}
-      >
-        {/* Colored icon block */}
-        <div
-          className="flex-shrink-0 w-14 h-14 flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg, #8A2BE2, #5B1483)' }}
-        >
-          <WorldIcon slug={section.sectionSlug} />
+    <div className="bg-white rounded-3xl p-5 shadow-sm">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="font-display text-xl font-bold text-gray-900">Your Progress</h2>
+        <button className="font-ui text-sm text-primary font-semibold">View all</button>
+      </div>
+
+      <div className="space-y-4">
+        {visible.map((s) => (
+          <div key={s.sectionId} className="rounded-2xl p-4" style={{ background: '#f4f1fb' }}>
+            <div className="flex justify-between items-center mb-1">
+              <span className="font-ui text-sm font-semibold text-gray-800">{s.sectionTitle}</span>
+              <span className="font-display text-sm font-bold text-primary">
+                {Math.round(s.progressPercent * 100)}%
+              </span>
+            </div>
+            <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden mt-2">
+              <motion.div
+                className="h-full rounded-full"
+                style={{ background: 'linear-gradient(90deg, #8A2BE2, #5B1483)' }}
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.max(s.progressPercent * 100, s.isCompleted ? 100 : 2)}%` }}
+                transition={{ duration: 0.7, ease: 'easeOut', delay: 0.2 }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Daily challenge banner ────────────────────────────────── */
+function DailyChallengeCard({ onPress }: { onPress: () => void }) {
+  return (
+    <motion.button
+      onClick={onPress}
+      className="w-full rounded-3xl p-5 text-left"
+      style={{ background: 'linear-gradient(135deg, #8A2BE2, #D946EF)' }}
+      whileTap={{ scale: 0.98 }}
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-display text-2xl font-bold text-white">Daily Challenge</h2>
+          <p className="font-ui text-sm text-white/80 mt-1">Earn 100 XP</p>
+
+          <div className="w-52 h-2.5 rounded-full mt-4 overflow-hidden" style={{ background: 'rgba(255,255,255,0.2)' }}>
+            <div className="w-[60%] h-full bg-white rounded-full" />
+          </div>
         </div>
 
-        <div className="flex-1 py-3 min-w-0">
-          <p className="font-ui text-xs text-white/50 font-semibold uppercase tracking-wide">
-            {moduleLabel}
-          </p>
-          <p className="font-display text-sm font-bold text-white truncate">
-            {section.sectionTitle}
-          </p>
-        </div>
+        <div className="text-5xl select-none">🎁</div>
+      </div>
+    </motion.button>
+  );
+}
 
-        <motion.div
-          className="flex-shrink-0 mr-3 rounded-full px-4 py-1.5"
-          style={{ background: '#8A2BE2', boxShadow: '0 3px 0 0 #5B1483' }}
-          whileTap={{ y: 3, boxShadow: 'none' }}
-        >
-          <span className="font-display text-xs font-bold text-white">GO!</span>
-        </motion.div>
-      </motion.button>
+/* ── Achievements card ─────────────────────────────────────── */
+function AchievementsCard({
+  streak,
+  lessonsCompleted,
+}: {
+  streak: number;
+  lessonsCompleted: number;
+}) {
+  const badges = [
+    {
+      earned: lessonsCompleted >= 1,
+      emoji: '🏅',
+      title: 'First Steps',
+      desc: 'Completed first lesson',
+      bg: '#FEFCE8',
+    },
+    {
+      earned: streak >= 3,
+      emoji: '🔥',
+      title: 'Streak Master',
+      desc: `${streak} day streak`,
+      bg: '#FFF7ED',
+    },
+  ];
+
+  return (
+    <div className="bg-white rounded-3xl p-5 shadow-sm">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="font-display text-xl font-bold text-gray-900">Recent Achievements</h2>
+        <button className="font-ui text-sm text-primary font-semibold">View all</button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        {badges.map((b) => (
+          <div
+            key={b.title}
+            className="rounded-2xl p-4"
+            style={{ background: b.bg, opacity: b.earned ? 1 : 0.45 }}
+          >
+            <p className="text-4xl select-none">{b.emoji}</p>
+            <h3 className="font-display font-bold text-gray-900 mt-2">{b.title}</h3>
+            <p className="font-ui text-sm text-gray-500 mt-1">{b.desc}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -213,66 +228,9 @@ function ModuleCard({
 /* ── Section label ─────────────────────────────────────────── */
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="px-5 pt-4 pb-2">
-      <p className="font-ui text-xs font-bold text-gray-400 uppercase tracking-widest">{children}</p>
-    </div>
-  );
-}
-
-/* ── Daily Challenge strip ─────────────────────────────────── */
-function DailyChallengeBanner({ onPress }: { onPress: () => void }) {
-  return (
-    <div className="px-4 pb-3">
-      <motion.button
-        whileTap={{ scale: 0.98 }}
-        onClick={onPress}
-        className="w-full rounded-2xl overflow-hidden flex items-center justify-between px-4 py-3"
-        style={{
-          background: 'linear-gradient(135deg, #F59E0B, #D97706)',
-          boxShadow: '0 4px 0 0 #B45309',
-        }}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-            <Target size={20} className="text-white" strokeWidth={2.5} />
-          </div>
-          <div className="text-left">
-            <p className="font-display text-sm font-bold text-white">Daily Challenge</p>
-            <p className="font-ui text-xs text-white/80">Earn bonus XP today!</p>
-          </div>
-        </div>
-        <div className="bg-white/20 rounded-full px-3 py-1">
-          <span className="font-ui text-xs font-bold text-white">Start</span>
-        </div>
-      </motion.button>
-    </div>
-  );
-}
-
-/* ── Champion footer ───────────────────────────────────────── */
-function ChampionFooter() {
-  return (
-    <div
-      className="relative overflow-hidden px-6 py-8 flex items-center gap-5"
-      style={{ background: 'linear-gradient(135deg, #5B1483 0%, #8A2BE2 50%, #7C3AED 100%)' }}
-    >
-      <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-white/10 pointer-events-none" />
-      <motion.div
-        className="shrink-0 w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center"
-        animate={{ rotate: [0, -8, 8, 0], scale: [1, 1.08, 1] }}
-        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-      >
-        <Trophy size={32} className="fill-amber-300 stroke-amber-400" strokeWidth={0.5} />
-      </motion.div>
-      <div>
-        <p className="font-display text-lg font-bold text-white leading-tight">
-          Complete all 4 worlds!
-        </p>
-        <p className="font-ui text-sm text-white/80 mt-1">
-          Conquer every level to become an AlgeFox Champion!
-        </p>
-      </div>
-    </div>
+    <p className="font-ui text-xs font-bold text-gray-400 uppercase tracking-widest px-5 pt-5 pb-2">
+      {children}
+    </p>
   );
 }
 
@@ -287,10 +245,14 @@ export default function HomePage() {
 
   const sections      = buildSections(completedSections);
   const username      = profile?.username ?? 'Champion';
+  const firstName     = username.split(' ')[0];
+  const totalXp       = stats?.totalXp ?? 0;
+  const level         = stats?.level ?? 1;
+  const lessonsCompleted = stats?.lessonsCompleted ?? 0;
   const activeSection = sections.find((s) => s.isUnlocked && !s.isCompleted) ?? null;
 
-  function handleNodeClick(sectionSlug: string, level: number) {
-    router.push(`/lesson/${sectionSlug}/${level}`);
+  function handleNodeClick(sectionSlug: string, lv: number) {
+    router.push(`/lesson/${sectionSlug}/${lv}`);
   }
 
   function handleContinue() {
@@ -299,26 +261,81 @@ export default function HomePage() {
     }
   }
 
+  const greeting = practicedToday
+    ? `Great work today! 🌟`
+    : currentStreak > 2
+      ? `${currentStreak} day streak! 🔥`
+      : `Ready for today's lesson?`;
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <HeroGreeting
-        name={username}
-        streak={currentStreak}
-        practicedToday={practicedToday}
-        xp={stats?.totalXp ?? 0}
-        level={stats?.level ?? 1}
-      />
+    <div className="min-h-screen" style={{ background: '#f4f1fb' }}>
 
-      {activeSection && (
-        <>
-          <SectionLabel>Continue Adventure</SectionLabel>
-          <ModuleCard section={activeSection} onPress={handleContinue} />
-        </>
-      )}
+      {/* ── Hero greeting card ─────────────────────────────── */}
+      <div className="px-4 pt-5 pb-0">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="bg-white rounded-3xl p-5 shadow-sm mb-4"
+        >
+          {/* Greeting row */}
+          <h2 className="font-display text-3xl font-bold text-gray-900">
+            Hi, {firstName}! 👋
+          </h2>
+          <p className="font-ui text-gray-500 mt-1">{greeting}</p>
 
-      <SectionLabel>Daily Challenge</SectionLabel>
-      <DailyChallengeBanner onPress={() => router.push('/daily-challenge')} />
+          {/* Stats grid */}
+          <div className="grid grid-cols-3 gap-3 mt-5">
+            <StatBox
+              icon={<Flame size={22} fill="#F97316" stroke="#EA580C" strokeWidth={0.5} />}
+              value={currentStreak}
+              label="Streak"
+              bg="#FFF7ED"
+            />
+            <StatBox
+              icon={<Zap size={22} fill="#FCD34D" stroke="#D97706" strokeWidth={0.5} />}
+              value={totalXp}
+              label="XP"
+              bg="#FEFCE8"
+            />
+            <StatBox
+              icon={<BarChart2 size={22} className="text-primary" strokeWidth={2} />}
+              value={`Lv.${level}`}
+              label="Level"
+              bg="#F5F0FF"
+            />
+          </div>
 
+          {/* Continue learning banner */}
+          {activeSection && (
+            <div className="mt-5">
+              <ContinueLearningBanner section={activeSection} onPress={handleContinue} />
+            </div>
+          )}
+        </motion.div>
+
+        {/* ── Progress card ─────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="mb-4"
+        >
+          <ProgressCard sections={sections} />
+        </motion.div>
+
+        {/* ── Daily challenge ────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="mb-2"
+        >
+          <DailyChallengeCard onPress={() => router.push('/daily-challenge')} />
+        </motion.div>
+      </div>
+
+      {/* ── Adventure map ─────────────────────────────────────── */}
       <SectionLabel>Adventure Map</SectionLabel>
       {sections.map((section, i) => (
         <WorldSection
@@ -329,7 +346,17 @@ export default function HomePage() {
         />
       ))}
 
-      <ChampionFooter />
+      {/* ── Achievements ──────────────────────────────────────── */}
+      <div className="px-4 pt-2 pb-6">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+        >
+          <AchievementsCard streak={currentStreak} lessonsCompleted={lessonsCompleted} />
+        </motion.div>
+      </div>
+
     </div>
   );
 }

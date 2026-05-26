@@ -97,9 +97,8 @@ export function MultipleChoice({
 
   return (
     <div className="flex flex-col gap-4 w-full">
-      {/* Options grid */}
       <motion.div
-        className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+        className="flex flex-col gap-3"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -110,25 +109,41 @@ export function MultipleChoice({
           const isSelected = option === selectedAnswer;
           const canTap = !disabled && !answered;
 
+          /* Border / background per state */
+          const borderColor =
+            state === 'correct' ? '#10B981' :
+            state === 'wrong'   ? '#F43F5E' :
+            state === 'default' ? (isSelected ? '#8A2BE2' : '#E5E7EB') : '#E5E7EB';
+
+          const bgColor =
+            state === 'correct' ? '#ECFDF5' :
+            state === 'wrong'   ? '#FFF1F2' :
+            state === 'default' ? (isSelected ? '#F5F0FF' : '#FFFFFF') : '#FFFFFF';
+
           return (
             <motion.button
               key={option}
               variants={itemVariants}
-              whileTap={canTap ? { y: 4, boxShadow: 'none' } : undefined}
-              style={canTap ? { boxShadow: 'var(--shadow-physical)' } : undefined}
+              whileTap={canTap ? { scale: 0.985, y: 2 } : undefined}
               disabled={disabled || answered}
               onClick={() => !disabled && !answered && onAnswer(option)}
               className={cn(
-                'relative flex items-center gap-3 rounded-2xl border-2 p-4 min-h-14 text-left',
-                'transition-colors duration-150 cursor-pointer select-none',
-                getOptionClasses(state),
-                (disabled || answered) && 'cursor-default',
+                'relative w-full flex items-center gap-3 rounded-2xl border-2 text-left select-none',
+                'transition-colors duration-150',
+                (disabled || answered) ? 'cursor-default' : 'cursor-pointer',
+                state === 'neutral' && 'opacity-50',
               )}
+              style={{
+                borderColor,
+                background: bgColor,
+                padding: '18px 16px',
+                boxShadow: canTap ? '0 3px 0 0 #D1D5DB' : 'none',
+              }}
             >
-              {/* Option label circle */}
+              {/* Option label */}
               <span
                 className={cn(
-                  'shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
+                  'shrink-0 w-9 h-9 rounded-full flex items-center justify-center',
                   'font-display font-bold text-sm transition-colors duration-150',
                   getLabelClasses(state),
                 )}
@@ -136,17 +151,17 @@ export function MultipleChoice({
                 {OPTION_LABELS[index] ?? String.fromCharCode(65 + index)}
               </span>
 
-              {/* Option text */}
-              <span className="font-ui text-base text-gray-800 flex-1">
+              {/* Option text — big and bold like the reference */}
+              <span className="font-display text-xl font-bold text-gray-900 flex-1">
                 {renderMathText(option)}
               </span>
 
               {/* Feedback icon */}
               {answered && isCorrectAnswer && (
-                <span className="ml-auto text-success font-bold text-lg">✓</span>
+                <span className="ml-auto font-bold text-xl" style={{ color: '#10B981' }}>✓</span>
               )}
               {answered && isSelected && !isCorrectAnswer && (
-                <span className="ml-auto text-error font-bold text-lg">✗</span>
+                <span className="ml-auto font-bold text-xl" style={{ color: '#F43F5E' }}>✗</span>
               )}
             </motion.button>
           );

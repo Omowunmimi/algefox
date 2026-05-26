@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { InlineMath } from 'react-katex';
+import Image from 'next/image';
 import {
   useLessonStore,
   selectCurrentQuestion,
@@ -17,7 +18,7 @@ import { QuestionRenderer } from '@/components/questions/QuestionRenderer';
 import { LessonHeader } from '@/components/lesson/LessonHeader';
 import { FeedbackOverlay } from '@/components/lesson/FeedbackOverlay';
 import { QuitConfirmModal } from '@/components/lesson/QuitConfirmModal';
-import { FoxyImage } from '@/components/mascot/FoxyImage';
+import { FoxyImage } from '@/components/mascot/FoxyImage'; // used in HeartsEmptyScreen
 import { createClient } from '@/lib/supabase/client';
 
 // ─── Math text helper ─────────────────────────────────────────────────────────
@@ -42,35 +43,34 @@ function renderMathText(text: string): ReactNode {
 
 function MascotQuestionBubble({ text }: { text: string }) {
   return (
-    <div className="flex items-end gap-3 px-4 pt-2 pb-4">
-      {/* Foxy mascot */}
-      <motion.div
-        className="flex-shrink-0"
-        animate={{ y: [0, -5, 0] }}
-        transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-      >
-        <FoxyImage expression="excited" size={82} />
-      </motion.div>
+    <div className="flex items-center gap-3 px-4 pt-4 pb-4">
+      {/* Foxy mascot — matches reference size */}
+      <div className="flex-shrink-0">
+        <Image
+          src="/mascot/foxy-excited.png"
+          alt="Foxy the fox"
+          width={110}
+          height={110}
+          className="object-contain"
+          priority
+        />
+      </div>
 
-      {/* Speech bubble */}
-      <div
-        className="relative flex-1 rounded-2xl bg-white px-4 py-3"
-        style={{ boxShadow: '0 3px 16px rgba(0,0,0,0.10)' }}
-      >
-        {/* Tail pointing left toward Foxy */}
+      {/* Speech bubble — reference uses gray-100 rounded-3xl */}
+      <div className="relative flex-1 rounded-3xl px-4 py-4" style={{ background: '#EDE9FE' }}>
+        {/* Left tail */}
         <span
           aria-hidden="true"
-          className="absolute -left-2.5 bottom-5"
+          className="absolute -left-2 top-1/2 -translate-y-1/2"
           style={{
             width: 0,
             height: 0,
-            borderTop: '9px solid transparent',
-            borderBottom: '9px solid transparent',
-            borderRight: '12px solid white',
-            filter: 'drop-shadow(-2px 0 2px rgba(0,0,0,0.04))',
+            borderTop: '8px solid transparent',
+            borderBottom: '8px solid transparent',
+            borderRight: '10px solid #EDE9FE',
           }}
         />
-        <p className="font-display text-[17px] font-bold text-gray-900 leading-snug">
+        <p className="font-display text-lg font-bold text-gray-900 leading-snug">
           {renderMathText(text)}
         </p>
       </div>
@@ -297,7 +297,7 @@ export default function LessonPage() {
   const showQuestion = phase === 'question' && currentQuestion;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: '#f4f1fb' }}>
       <LessonHeader
         current={currentIndex + 1}
         total={queueLength}
