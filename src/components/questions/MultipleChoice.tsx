@@ -97,11 +97,6 @@ export function MultipleChoice({
 
   return (
     <div className="flex flex-col gap-4 w-full">
-      {/* Question text */}
-      <p className="font-display text-2xl font-bold text-gray-900 leading-snug px-1 text-center">
-        {renderMathText(question.questionText)}
-      </p>
-
       {/* Options grid */}
       <motion.div
         className="grid grid-cols-1 sm:grid-cols-2 gap-3"

@@ -180,7 +180,7 @@ export function FeedbackOverlay({
                 </Button>
               ) : (
                 <Button variant="amber" size="lg" fullWidth onClick={onContinue}>
-                  Try Again
+                  Next →
                 </Button>
               )}
             </div>

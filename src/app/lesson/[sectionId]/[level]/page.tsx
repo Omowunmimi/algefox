@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { InlineMath } from 'react-katex';
 import {
   useLessonStore,
   selectCurrentQuestion,
@@ -15,13 +17,72 @@ import { QuestionRenderer } from '@/components/questions/QuestionRenderer';
 import { LessonHeader } from '@/components/lesson/LessonHeader';
 import { FeedbackOverlay } from '@/components/lesson/FeedbackOverlay';
 import { QuitConfirmModal } from '@/components/lesson/QuitConfirmModal';
+import { FoxyImage } from '@/components/mascot/FoxyImage';
 import { createClient } from '@/lib/supabase/client';
+
+// ─── Math text helper ─────────────────────────────────────────────────────────
+
+function renderMathText(text: string): ReactNode {
+  if (!text.includes('$')) return text;
+  const parts = text.split(/(\$[^$]+\$)/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (part.startsWith('$') && part.endsWith('$')) {
+          const latex = part.slice(1, -1);
+          return <InlineMath key={i} math={latex} />;
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </>
+  );
+}
+
+/* ── Mascot question bubble ──────────────────────────────────── */
+
+function MascotQuestionBubble({ text }: { text: string }) {
+  return (
+    <div className="flex items-end gap-3 px-4 pt-2 pb-4">
+      {/* Foxy mascot */}
+      <motion.div
+        className="flex-shrink-0"
+        animate={{ y: [0, -5, 0] }}
+        transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        <FoxyImage expression="excited" size={82} />
+      </motion.div>
+
+      {/* Speech bubble */}
+      <div
+        className="relative flex-1 rounded-2xl bg-white px-4 py-3"
+        style={{ boxShadow: '0 3px 16px rgba(0,0,0,0.10)' }}
+      >
+        {/* Tail pointing left toward Foxy */}
+        <span
+          aria-hidden="true"
+          className="absolute -left-2.5 bottom-5"
+          style={{
+            width: 0,
+            height: 0,
+            borderTop: '9px solid transparent',
+            borderBottom: '9px solid transparent',
+            borderRight: '12px solid white',
+            filter: 'drop-shadow(-2px 0 2px rgba(0,0,0,0.04))',
+          }}
+        />
+        <p className="font-display text-[17px] font-bold text-gray-900 leading-snug">
+          {renderMathText(text)}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 /* ── Loading spinner ─────────────────────────────────────────── */
 
 function LoadingSpinner() {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 py-16">
+    <div className="flex flex-col items-center justify-center gap-4 py-20">
       <div
         className="w-12 h-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin"
         role="status"
@@ -37,14 +98,7 @@ function LoadingSpinner() {
 function HeartsEmptyScreen({ onQuit }: { onQuit: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center gap-6 py-12 text-center px-4">
-      {/* Sad Ayo mascot placeholder */}
-      <div
-        className="text-7xl select-none"
-        role="img"
-        aria-label="Sad fox mascot"
-      >
-        🦊
-      </div>
+      <FoxyImage expression="sad" size={100} />
       <div>
         <h2 className="font-display text-2xl font-bold text-gray-900 mb-2">
           Oh no! You&apos;re out of hearts
@@ -71,7 +125,6 @@ export default function LessonPage() {
   const sectionId = params.sectionId;
   const level = parseInt(params.level, 10);
 
-  // Lesson initialisation hook — fetches templates, generates questions, inits store
   const { isLoading: lessonLoading } = useLesson(sectionId, level);
 
   // Store slices
@@ -97,7 +150,6 @@ export default function LessonPage() {
   const updateStats = useUserStore((s) => s.updateStats);
   const completeSection = useUserStore((s) => s.completeSection);
 
-  // Local UI state
   const [showQuitModal, setShowQuitModal] = useState(false);
 
   /* ── Phase: lesson complete → navigate to reward ─────────── */
@@ -107,25 +159,20 @@ export default function LessonPage() {
     const correct = answers.filter((a) => a.isCorrect).length;
     const total = questionQueue.length;
     const xpToAward = xpEarned > 0 ? xpEarned : correct * 10;
-    // Pass = 60% or more correct
     const passed = total > 0 && correct / total >= 0.6;
 
-    // ── 1. Update local stores immediately ───────────────────
     addXpUser(xpToAward);
     updateStats({
       lessonsCompleted: (userStats?.lessonsCompleted ?? 0) + 1,
       questionsAnswered: (userStats?.questionsAnswered ?? 0) + total,
       questionsCorrect: (userStats?.questionsCorrect ?? 0) + correct,
     });
-    // Only unlock next section on pass
     if (passed) {
       completeSection(sectionId, level);
     }
 
-    // ── 2. Record streak (local) ──────────────────────────────
     useStreakStore.getState().recordActivity(new Date().toISOString());
 
-    // ── 3. Sync everything to Supabase (best-effort) ─────────
     const startedAt = useLessonStore.getState().startedAt;
 
     const syncToDb = async () => {
@@ -145,7 +192,6 @@ export default function LessonPage() {
         const today = new Date().toISOString().split('T')[0];
 
         await Promise.allSettled([
-          // Upsert XP + stats — creates row if it doesn't exist yet
           supabase.from('user_stats').upsert({
             user_id: user.id,
             total_xp: newTotalXp,
@@ -154,8 +200,6 @@ export default function LessonPage() {
             questions_answered: newQuestionsAnswered,
             questions_correct: newQuestionsCorrect,
           }),
-
-          // Upsert streak
           supabase.from('streaks').upsert({
             user_id: user.id,
             current_streak: streakState.currentStreak,
@@ -164,7 +208,6 @@ export default function LessonPage() {
           }),
         ]);
 
-        // Try to record lesson session (table may not exist yet — non-fatal)
         try {
           const timeTaken = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : 0;
           await supabase.from('lesson_sessions').insert({
@@ -203,15 +246,12 @@ export default function LessonPage() {
   /* ── Answer handler ──────────────────────────────────────── */
   const handleAnswer = useCallback(
     (answer: string) => {
-      // Determine correctness before mutating store
       const isCorrect =
         answer.trim().toLowerCase() ===
         (currentQuestion?.correctAnswer ?? '').trim().toLowerCase();
 
-      // Update store phase
       submitAnswer(answer);
 
-      // Play sound
       const audio = useAudioStore.getState();
       audio.playSound(isCorrect ? 'correct' : 'incorrect');
 
@@ -219,7 +259,6 @@ export default function LessonPage() {
         loseHeart();
         loseHeartUser();
 
-        // If hearts will be exhausted, move to hearts_empty phase
         const remainingHearts = (userStats?.hearts ?? 5) - 1;
         if (remainingHearts <= 0) {
           setPhase('hearts_empty');
@@ -243,7 +282,6 @@ export default function LessonPage() {
   /* ── Continue handler ────────────────────────────────────── */
   const handleContinue = useCallback(() => {
     advanceQuestion();
-    // lesson_complete phase change is caught by the useEffect above
   }, [advanceQuestion]);
 
   /* ── Quit handler ────────────────────────────────────────── */
@@ -256,6 +294,8 @@ export default function LessonPage() {
   const isInFeedback =
     phase === 'feedback_correct' || phase === 'feedback_incorrect';
 
+  const showQuestion = phase === 'question' && currentQuestion;
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <LessonHeader
@@ -267,26 +307,38 @@ export default function LessonPage() {
         onClose={() => setShowQuitModal(true)}
       />
 
-      {/* Main question area */}
-      <main className="flex-1 px-4 pt-56 pb-36 overflow-y-auto flex flex-col justify-center">
-        {(phase === 'loading' || lessonLoading) && <LoadingSpinner />}
+      {/* Main question area — pt-20 accounts for the single-row fixed header */}
+      <main className="flex-1 pt-20 pb-36 flex flex-col">
+        {(phase === 'loading' || lessonLoading) && (
+          <LoadingSpinner />
+        )}
 
-        {phase === 'question' && currentQuestion && (
-          <QuestionRenderer
-            question={currentQuestion}
-            onAnswer={handleAnswer}
-            disabled={false}
-            selectedAnswer={null}
-            isCorrect={null}
-          />
+        {showQuestion && (
+          <>
+            {/* Mascot asks the question */}
+            <MascotQuestionBubble text={currentQuestion.questionText} />
+
+            {/* Answer interaction area */}
+            <div className="flex-1 px-4">
+              <QuestionRenderer
+                question={currentQuestion}
+                onAnswer={handleAnswer}
+                disabled={false}
+                selectedAnswer={null}
+                isCorrect={null}
+              />
+            </div>
+          </>
         )}
 
         {phase === 'hearts_empty' && (
-          <HeartsEmptyScreen onQuit={handleQuit} />
+          <div className="flex-1 flex items-center justify-center px-4">
+            <HeartsEmptyScreen onQuit={handleQuit} />
+          </div>
         )}
       </main>
 
-      {/* Feedback overlay — slides up from bottom */}
+      {/* Feedback overlay */}
       <FeedbackOverlay
         isVisible={isInFeedback}
         isCorrect={phase === 'feedback_correct'}
