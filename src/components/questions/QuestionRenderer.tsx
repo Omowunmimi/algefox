@@ -16,7 +16,8 @@ interface QuestionRendererProps {
   question: QuestionInstance;
   onAnswer: (answer: string) => void;
   disabled?: boolean;
-  selectedAnswer?: string | null;
+  selectedAnswer?: string | null;      // pending selection
+  submittedAnswer?: string | null;     // actually submitted answer (for correct/wrong display)
   isCorrect?: boolean | null;
 }
 
@@ -27,6 +28,7 @@ export function QuestionRenderer({
   onAnswer,
   disabled = false,
   selectedAnswer = null,
+  submittedAnswer = null,
   isCorrect = null,
 }: QuestionRendererProps) {
   const commonProps = {
@@ -34,6 +36,7 @@ export function QuestionRenderer({
     onAnswer,
     disabled,
     selectedAnswer,
+    submittedAnswer,
     isCorrect,
   };
 
@@ -70,9 +73,8 @@ export function QuestionRenderer({
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -24 }}
         transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-        className="flex flex-col gap-5 w-full"
+        className="flex flex-col gap-4 w-full"
       >
-        {/* Question body — question text is shown in the mascot bubble above */}
         {renderQuestionBody()}
       </motion.div>
     </AnimatePresence>

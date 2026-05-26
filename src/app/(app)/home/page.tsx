@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Flame, Zap, BarChart2, Target, ChevronRight } from 'lucide-react';
+import { Flame, Zap, Coins } from 'lucide-react';
 import Image from 'next/image';
 import { useUserStore } from '@/stores/useUserStore';
 import { useStreakStore, selectPracticedToday } from '@/stores/useStreakStore';
@@ -19,9 +19,9 @@ const SECTION_DEFS = [
 
 function buildSections(completedSections: Record<string, number>): SectionProgress[] {
   return SECTION_DEFS.map((def, index) => {
-    const highestLevel = completedSections[def.sectionSlug] ?? 0;
-    const prevSlug = index > 0 ? SECTION_DEFS[index - 1].sectionSlug : null;
-    const isUnlocked = index === 0 || (prevSlug ? (completedSections[prevSlug] ?? 0) >= 1 : false);
+    const highestLevel  = completedSections[def.sectionSlug] ?? 0;
+    const prevSlug      = index > 0 ? SECTION_DEFS[index - 1].sectionSlug : null;
+    const isUnlocked    = index === 0 || (prevSlug ? (completedSections[prevSlug] ?? 0) >= 1 : false);
     return {
       sectionId:       def.sectionId,
       sectionSlug:     def.sectionSlug,
@@ -35,208 +35,274 @@ function buildSections(completedSections: Record<string, number>): SectionProgre
   });
 }
 
-/* ── Stat box ──────────────────────────────────────────────── */
-function StatBox({
-  icon,
-  value,
-  label,
-  bg,
-}: {
-  icon: React.ReactNode;
-  value: string | number;
-  label: string;
-  bg: string;
-}) {
+/* ── Stat chip ─────────────────────────────────────────────── */
+function StatChip({ icon, value, label }: { icon: React.ReactNode; value: string | number; label: string }) {
   return (
-    <div className="rounded-2xl p-3 text-center flex flex-col items-center gap-1" style={{ background: bg }}>
-      <div className="w-9 h-9 flex items-center justify-center">{icon}</div>
-      <p className="font-display text-xl font-bold text-gray-900 leading-none">{value}</p>
-      <p className="font-ui text-xs text-gray-500">{label}</p>
+    <div className="flex flex-col items-center gap-0.5">
+      <div className="flex items-center gap-1">
+        {icon}
+        <span className="font-display text-base font-bold text-gray-900 tabular-nums">{value}</span>
+      </div>
+      <span className="font-ui text-[10px] text-gray-400 font-semibold">{label}</span>
     </div>
   );
 }
 
-/* ── Continue learning banner (mascot breaks out of left edge) ─ */
-function ContinueLearningBanner({
-  section,
-  onPress,
+/* ── Hero section with landscape ───────────────────────────── */
+function HeroSection({
+  activeSection,
+  onContinue,
 }: {
-  section: SectionProgress | null;
-  onPress: () => void;
+  activeSection: SectionProgress | null;
+  onContinue: () => void;
 }) {
-  if (!section) return null;
-
   return (
     <div
-      className="relative rounded-3xl overflow-hidden"
-      style={{ background: 'linear-gradient(135deg, #8A2BE2 0%, #5B1483 100%)' }}
+      className="relative mx-4 rounded-3xl overflow-hidden"
+      style={{ minHeight: '210px' }}
     >
-      {/* Mascot breaking out of left edge */}
-      <div className="absolute -left-3 bottom-0 pointer-events-none select-none">
+      {/* Sky gradient background */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(180deg, #87CEEB 0%, #B2E0F7 25%, #C8E6A0 55%, #7DC464 80%, #5BA443 100%)',
+        }}
+      />
+
+      {/* Decorative clouds */}
+      <div
+        className="absolute rounded-full bg-white/80"
+        style={{ width: 80, height: 30, top: '10%', left: '30%', filter: 'blur(2px)' }}
+      />
+      <div
+        className="absolute rounded-full bg-white/70"
+        style={{ width: 55, height: 22, top: '8%', left: '40%', filter: 'blur(1px)' }}
+      />
+      <div
+        className="absolute rounded-full bg-white/60"
+        style={{ width: 40, height: 18, top: '16%', right: '18%', filter: 'blur(2px)' }}
+      />
+
+      {/* Decorative flowers */}
+      <div className="absolute bottom-0 left-[44%] text-2xl select-none" style={{ bottom: 2 }}>🌸</div>
+      <div className="absolute bottom-0 left-[35%] text-xl select-none" style={{ bottom: 2 }}>🌼</div>
+
+      {/* Foxy — large, bottom-left, slightly overflowing */}
+      <div className="absolute bottom-0 left-0 z-10">
         <Image
           src="/mascot/foxy-full.png"
           alt="Foxy the fox"
-          width={150}
-          height={150}
+          width={170}
+          height={220}
           className="object-contain"
           priority
         />
       </div>
 
-      {/* Text + CTA pushed to the right */}
-      <div className="ml-36 p-4">
-        <p className="font-ui text-sm text-white/75">Continue Learning</p>
-        <h2 className="font-display text-xl font-bold text-white mt-1 leading-snug">
-          {section.sectionTitle}
-        </h2>
-
-        {/* Progress bar */}
-        <div className="w-full h-2.5 rounded-full mt-3 overflow-hidden" style={{ background: 'rgba(255,255,255,0.25)' }}>
-          <motion.div
-            className="h-full rounded-full bg-white"
-            initial={{ width: 0 }}
-            animate={{ width: `${Math.max(section.progressPercent * 100, 4)}%` }}
-            transition={{ duration: 0.7, ease: 'easeOut', delay: 0.3 }}
-          />
-        </div>
-
-        {/* Button */}
-        <motion.button
-          onClick={onPress}
-          className="mt-4 w-full font-display font-bold text-purple-700 rounded-2xl py-2.5"
-          style={{ background: '#FFFFFF' }}
-          whileTap={{ scale: 0.97 }}
+      {/* Continue Learning floating card */}
+      {activeSection ? (
+        <div
+          className="absolute right-3 top-4 bottom-4 z-20 bg-white rounded-2xl p-4 flex flex-col justify-between shadow-md"
+          style={{ width: '52%' }}
         >
-          Continue Lesson
-        </motion.button>
-      </div>
-    </div>
-  );
-}
+          <div>
+            <p className="font-ui text-xs font-bold uppercase tracking-wider" style={{ color: '#8A2BE2' }}>
+              Continue Learning
+            </p>
+            <h3 className="font-display text-lg font-bold text-gray-900 mt-1 leading-tight">
+              {activeSection.sectionTitle}
+            </h3>
+            <p className="font-ui text-xs text-gray-400 mt-0.5">
+              Level {activeSection.currentLevel}
+            </p>
 
-/* ── Progress card ─────────────────────────────────────────── */
-function ProgressCard({ sections }: { sections: SectionProgress[] }) {
-  const visible = sections.filter((s) => s.isUnlocked).slice(0, 3);
-  if (visible.length === 0) return null;
-
-  return (
-    <div className="bg-white rounded-3xl p-5 shadow-sm">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="font-display text-xl font-bold text-gray-900">Your Progress</h2>
-        <button className="font-ui text-sm text-primary font-semibold">View all</button>
-      </div>
-
-      <div className="space-y-4">
-        {visible.map((s) => (
-          <div key={s.sectionId} className="rounded-2xl p-4" style={{ background: '#f4f1fb' }}>
-            <div className="flex justify-between items-center mb-1">
-              <span className="font-ui text-sm font-semibold text-gray-800">{s.sectionTitle}</span>
-              <span className="font-display text-sm font-bold text-primary">
-                {Math.round(s.progressPercent * 100)}%
-              </span>
-            </div>
-            <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden mt-2">
+            {/* Progress bar */}
+            <div className="w-full h-2 rounded-full mt-3 overflow-hidden" style={{ background: '#EDE9FE' }}>
               <motion.div
                 className="h-full rounded-full"
                 style={{ background: 'linear-gradient(90deg, #8A2BE2, #5B1483)' }}
                 initial={{ width: 0 }}
-                animate={{ width: `${Math.max(s.progressPercent * 100, s.isCompleted ? 100 : 2)}%` }}
-                transition={{ duration: 0.7, ease: 'easeOut', delay: 0.2 }}
+                animate={{ width: `${Math.max(activeSection.progressPercent * 100, 3)}%` }}
+                transition={{ duration: 0.7, ease: 'easeOut' }}
               />
             </div>
+            <p className="font-ui text-[10px] text-gray-400 mt-1 text-right">
+              {activeSection.highestLevel} / 20
+            </p>
           </div>
-        ))}
-      </div>
+
+          <motion.button
+            onClick={onContinue}
+            className="w-full rounded-xl py-2.5 font-display font-bold text-white text-sm flex items-center justify-center gap-1"
+            style={{ background: 'linear-gradient(135deg, #8A2BE2, #5B1483)', boxShadow: '0 3px 0 0 #3B0764' }}
+            whileTap={{ y: 3, boxShadow: 'none', scale: 0.98 }}
+          >
+            Continue Lesson <span>›</span>
+          </motion.button>
+        </div>
+      ) : (
+        <div
+          className="absolute right-3 top-4 bottom-4 z-20 bg-white rounded-2xl p-4 flex flex-col justify-center items-center shadow-md text-center"
+          style={{ width: '52%' }}
+        >
+          <p className="font-display text-base font-bold text-gray-900">You&apos;re all caught up!</p>
+          <p className="font-ui text-xs text-gray-400 mt-1">Keep exploring the map below</p>
+        </div>
+      )}
     </div>
   );
 }
 
-/* ── Daily challenge banner ────────────────────────────────── */
+/* ── Progress cards (side by side) ────────────────────────── */
+const SECTION_ICONS: Record<string, string> = {
+  'fractions-intro':      '🌲',
+  'fractions-operations': '🌊',
+  'algebra-intro':        '🏰',
+  'algebra-expressions':  '⛰️',
+};
+
+function ProgressCards({ sections }: { sections: SectionProgress[] }) {
+  const visible = sections.filter((s) => s.isUnlocked).slice(0, 4);
+  if (visible.length === 0) return null;
+
+  // Show 2 at a time in a row
+  const pairs: SectionProgress[][] = [];
+  for (let i = 0; i < visible.length; i += 2) {
+    pairs.push(visible.slice(i, i + 2));
+  }
+
+  return (
+    <div className="mx-4">
+      <div className="flex justify-between items-center mb-3">
+        <h2 className="font-display text-lg font-bold text-gray-900">Your Progress</h2>
+        <button className="font-ui text-sm font-semibold" style={{ color: '#8A2BE2' }}>View all</button>
+      </div>
+
+      {pairs.map((pair, pi) => (
+        <div key={pi} className="flex gap-3 mb-3">
+          {pair.map((s) => (
+            <div
+              key={s.sectionId}
+              className="flex-1 bg-white rounded-2xl p-3 shadow-sm"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-2xl select-none">{SECTION_ICONS[s.sectionSlug] ?? '📚'}</span>
+                <div className="min-w-0">
+                  <p className="font-display text-sm font-bold text-gray-900 leading-tight truncate">
+                    {s.sectionTitle}
+                  </p>
+                  <p className="font-display text-base font-bold" style={{ color: '#8A2BE2' }}>
+                    {Math.round(s.progressPercent * 100)}%
+                  </p>
+                </div>
+              </div>
+              <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: '#EDE9FE' }}>
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ background: 'linear-gradient(90deg, #8A2BE2, #5B1483)' }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.max(s.progressPercent * 100, s.isCompleted ? 100 : 2)}%` }}
+                  transition={{ duration: 0.6, ease: 'easeOut' }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Daily challenge ───────────────────────────────────────── */
 function DailyChallengeCard({ onPress }: { onPress: () => void }) {
   return (
-    <motion.button
-      onClick={onPress}
-      className="w-full rounded-3xl p-5 text-left"
-      style={{ background: 'linear-gradient(135deg, #8A2BE2, #D946EF)' }}
-      whileTap={{ scale: 0.98 }}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="font-display text-2xl font-bold text-white">Daily Challenge</h2>
-          <p className="font-ui text-sm text-white/80 mt-1">Earn 100 XP</p>
-
-          <div className="w-52 h-2.5 rounded-full mt-4 overflow-hidden" style={{ background: 'rgba(255,255,255,0.2)' }}>
-            <div className="w-[60%] h-full bg-white rounded-full" />
-          </div>
+    <div className="mx-4">
+      <motion.button
+        onClick={onPress}
+        className="w-full rounded-2xl p-4 text-left flex items-center gap-4"
+        style={{ background: 'linear-gradient(135deg, #8A2BE2 0%, #7C3AED 50%, #6D28D9 100%)' }}
+        whileTap={{ scale: 0.98 }}
+      >
+        {/* Target icon in circle */}
+        <div className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.2)' }}>
+          <span className="text-2xl select-none">🎯</span>
         </div>
 
-        <div className="text-5xl select-none">🎁</div>
-      </div>
-    </motion.button>
-  );
-}
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <p className="font-display text-lg font-bold text-white">Daily Challenge</p>
+          <p className="font-ui text-xs text-white/80 mt-0.5">Earn 100 XP</p>
 
-/* ── Achievements card ─────────────────────────────────────── */
-function AchievementsCard({
-  streak,
-  lessonsCompleted,
-}: {
-  streak: number;
-  lessonsCompleted: number;
-}) {
-  const badges = [
-    {
-      earned: lessonsCompleted >= 1,
-      emoji: '🏅',
-      title: 'First Steps',
-      desc: 'Completed first lesson',
-      bg: '#FEFCE8',
-    },
-    {
-      earned: streak >= 3,
-      emoji: '🔥',
-      title: 'Streak Master',
-      desc: `${streak} day streak`,
-      bg: '#FFF7ED',
-    },
-  ];
-
-  return (
-    <div className="bg-white rounded-3xl p-5 shadow-sm">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="font-display text-xl font-bold text-gray-900">Recent Achievements</h2>
-        <button className="font-ui text-sm text-primary font-semibold">View all</button>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        {badges.map((b) => (
-          <div
-            key={b.title}
-            className="rounded-2xl p-4"
-            style={{ background: b.bg, opacity: b.earned ? 1 : 0.45 }}
-          >
-            <p className="text-4xl select-none">{b.emoji}</p>
-            <h3 className="font-display font-bold text-gray-900 mt-2">{b.title}</h3>
-            <p className="font-ui text-sm text-gray-500 mt-1">{b.desc}</p>
+          {/* Progress bar */}
+          <div className="w-full h-2 rounded-full mt-2 overflow-hidden" style={{ background: 'rgba(255,255,255,0.25)' }}>
+            <div className="w-[60%] h-full bg-white rounded-full" />
           </div>
-        ))}
-      </div>
+          <p className="font-ui text-[10px] text-white/70 mt-0.5">60 / 100</p>
+        </div>
+
+        {/* Start Challenge button */}
+        <div className="flex-shrink-0 flex flex-col items-center gap-1">
+          <div className="rounded-xl px-3 py-1.5 bg-white">
+            <span className="font-display text-xs font-bold" style={{ color: '#8A2BE2' }}>Start</span>
+          </div>
+          <span className="text-2xl select-none">🎁</span>
+        </div>
+      </motion.button>
     </div>
   );
 }
 
-/* ── Section label ─────────────────────────────────────────── */
-function SectionLabel({ children }: { children: React.ReactNode }) {
+/* ── Achievements ──────────────────────────────────────────── */
+const ACHIEVEMENTS = [
+  { id: 'first-steps',    emoji: '🐾', title: 'First Steps',       desc: 'Complete your first lesson',  color: '#FEF3C7', check: (l: number) => l >= 1 },
+  { id: 'streak-master',  emoji: '🔥', title: 'Streak Master',     desc: 'Maintain a 3-day streak',     color: '#FFF7ED', check: (_: number, s: number) => s >= 3 },
+  { id: 'fraction-exp',   emoji: '🥧', title: 'Fraction Explorer', desc: 'Finish 10 fraction lessons',  color: '#ECFDF5', check: (l: number) => l >= 10 },
+  { id: 'quick-thinker',  emoji: '⚡', title: 'Quick Thinker',     desc: 'Answer 5 in a row correctly', color: '#EFF6FF', check: (l: number) => l >= 5 },
+] as const;
+
+function AchievementsSection({ lessonsCompleted, streak }: { lessonsCompleted: number; streak: number }) {
   return (
-    <p className="font-ui text-xs font-bold text-gray-400 uppercase tracking-widest px-5 pt-5 pb-2">
-      {children}
-    </p>
+    <div className="mx-4">
+      <div className="flex justify-between items-center mb-3">
+        <h2 className="font-display text-lg font-bold text-gray-900">Recent Achievements</h2>
+        <button className="font-ui text-sm font-semibold" style={{ color: '#8A2BE2' }}>View all</button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {ACHIEVEMENTS.map((a) => {
+          const earned = a.check(lessonsCompleted, streak);
+          return (
+            <div
+              key={a.id}
+              className="rounded-2xl p-3 bg-white shadow-sm"
+              style={{ opacity: earned ? 1 : 0.55 }}
+            >
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center mb-2 text-2xl select-none"
+                style={{ background: a.color }}
+              >
+                {a.emoji}
+              </div>
+              <p className="font-display text-sm font-bold text-gray-900">{a.title}</p>
+              <p className="font-ui text-xs text-gray-500 mt-0.5">{a.desc}</p>
+              {earned && (
+                <div className="flex items-center gap-1 mt-2">
+                  <span className="text-success text-xs">✓</span>
+                  <span className="font-ui text-xs font-bold text-success">Completed</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
 /* ── Page ──────────────────────────────────────────────────── */
 export default function HomePage() {
   const router = useRouter();
+
   const profile           = useUserStore((s) => s.profile);
   const stats             = useUserStore((s) => s.stats);
   const completedSections = useUserStore((s) => s.completedSections);
@@ -251,6 +317,12 @@ export default function HomePage() {
   const lessonsCompleted = stats?.lessonsCompleted ?? 0;
   const activeSection = sections.find((s) => s.isUnlocked && !s.isCompleted) ?? null;
 
+  const greeting = practicedToday
+    ? 'Great work today! 🌟'
+    : currentStreak > 2
+      ? `${currentStreak} day streak! 🔥`
+      : "Ready for today's lesson?";
+
   function handleNodeClick(sectionSlug: string, lv: number) {
     router.push(`/lesson/${sectionSlug}/${lv}`);
   }
@@ -261,101 +333,96 @@ export default function HomePage() {
     }
   }
 
-  const greeting = practicedToday
-    ? `Great work today! 🌟`
-    : currentStreak > 2
-      ? `${currentStreak} day streak! 🔥`
-      : `Ready for today's lesson?`;
-
   return (
-    <div className="min-h-screen" style={{ background: '#f4f1fb' }}>
+    <div className="min-h-screen pb-8" style={{ background: '#f4f1fb' }}>
 
-      {/* ── Hero greeting card ─────────────────────────────── */}
-      <div className="px-4 pt-5 pb-0">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="bg-white rounded-3xl p-5 shadow-sm mb-4"
-        >
-          {/* Greeting row */}
-          <h2 className="font-display text-3xl font-bold text-gray-900">
+      {/* ── Greeting + stats row ──────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="px-4 pt-5 pb-4 flex items-start justify-between"
+      >
+        <div>
+          <h2 className="font-display text-2xl font-bold text-gray-900">
             Hi, {firstName}! 👋
           </h2>
-          <p className="font-ui text-gray-500 mt-1">{greeting}</p>
+          <p className="font-ui text-sm text-gray-500 mt-0.5">{greeting}</p>
+        </div>
 
-          {/* Stats grid */}
-          <div className="grid grid-cols-3 gap-3 mt-5">
-            <StatBox
-              icon={<Flame size={22} fill="#F97316" stroke="#EA580C" strokeWidth={0.5} />}
-              value={currentStreak}
-              label="Streak"
-              bg="#FFF7ED"
-            />
-            <StatBox
-              icon={<Zap size={22} fill="#FCD34D" stroke="#D97706" strokeWidth={0.5} />}
-              value={totalXp}
-              label="XP"
-              bg="#FEFCE8"
-            />
-            <StatBox
-              icon={<BarChart2 size={22} className="text-primary" strokeWidth={2} />}
-              value={`Lv.${level}`}
-              label="Level"
-              bg="#F5F0FF"
-            />
-          </div>
+        <div className="flex items-center gap-4 mt-1">
+          <StatChip
+            icon={<Flame size={16} fill="#F97316" stroke="#EA580C" strokeWidth={0.5} />}
+            value={currentStreak}
+            label="Streak"
+          />
+          <StatChip
+            icon={<Zap size={16} fill="#FCD34D" stroke="#D97706" strokeWidth={0.5} />}
+            value={totalXp}
+            label="XP"
+          />
+          <StatChip
+            icon={<Coins size={16} className="text-amber-500" strokeWidth={1.5} />}
+            value={level * 10}
+            label="Coins"
+          />
+        </div>
+      </motion.div>
 
-          {/* Continue learning banner */}
-          {activeSection && (
-            <div className="mt-5">
-              <ContinueLearningBanner section={activeSection} onPress={handleContinue} />
-            </div>
-          )}
-        </motion.div>
+      {/* ── Hero with landscape ───────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.05 }}
+        className="mb-5"
+      >
+        <HeroSection activeSection={activeSection} onContinue={handleContinue} />
+      </motion.div>
 
-        {/* ── Progress card ─────────────────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="mb-4"
-        >
-          <ProgressCard sections={sections} />
-        </motion.div>
+      {/* ── Progress cards ────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+        className="mb-5"
+      >
+        <ProgressCards sections={sections} />
+      </motion.div>
 
-        {/* ── Daily challenge ────────────────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-          className="mb-2"
-        >
-          <DailyChallengeCard onPress={() => router.push('/daily-challenge')} />
-        </motion.div>
+      {/* ── Daily challenge ───────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.15 }}
+        className="mb-5"
+      >
+        <DailyChallengeCard onPress={() => router.push('/daily-challenge')} />
+      </motion.div>
+
+      {/* ── Adventure map ─────────────────────────────────── */}
+      <div className="mb-5">
+        <p className="font-ui text-xs font-bold text-gray-400 uppercase tracking-widest px-5 pb-2">
+          Adventure Map
+        </p>
+        {sections.map((section, i) => (
+          <WorldSection
+            key={section.sectionId}
+            section={section}
+            worldIndex={i}
+            onNodeClick={handleNodeClick}
+          />
+        ))}
       </div>
 
-      {/* ── Adventure map ─────────────────────────────────────── */}
-      <SectionLabel>Adventure Map</SectionLabel>
-      {sections.map((section, i) => (
-        <WorldSection
-          key={section.sectionId}
-          section={section}
-          worldIndex={i}
-          onNodeClick={handleNodeClick}
-        />
-      ))}
-
-      {/* ── Achievements ──────────────────────────────────────── */}
-      <div className="px-4 pt-2 pb-6">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.3 }}
-        >
-          <AchievementsCard streak={currentStreak} lessonsCompleted={lessonsCompleted} />
-        </motion.div>
-      </div>
+      {/* ── Achievements ──────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.2 }}
+        className="mb-4"
+      >
+        <AchievementsSection lessonsCompleted={lessonsCompleted} streak={currentStreak} />
+      </motion.div>
 
     </div>
   );

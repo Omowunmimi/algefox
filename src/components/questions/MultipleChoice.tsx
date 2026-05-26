@@ -3,11 +3,10 @@
 import { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { InlineMath } from 'react-katex';
-// import 'katex/dist/katex.min.css';
 import { cn } from '@/lib/utils/cn';
 import type { QuestionInstance } from '@/types/lesson.types';
 
-// ─── Math text helper ─────────────────────────────────────────────────────────
+// ─── Math rendering ────────────────────────────────────────────────────────────
 
 function renderMathText(text: string): ReactNode {
   if (!text.includes('$')) return text;
@@ -16,8 +15,7 @@ function renderMathText(text: string): ReactNode {
     <>
       {parts.map((part, i) => {
         if (part.startsWith('$') && part.endsWith('$')) {
-          const latex = part.slice(1, -1);
-          return <InlineMath key={i} math={latex} />;
+          return <InlineMath key={i} math={part.slice(1, -1)} />;
         }
         return <span key={i}>{part}</span>;
       })}
@@ -25,17 +23,39 @@ function renderMathText(text: string): ReactNode {
   );
 }
 
+// ─── Vertical fraction renderer ────────────────────────────────────────────────
+// Detects "a/b" patterns and renders them as stacked fractions
+
+function renderOptionContent(option: string): ReactNode {
+  // Check for simple fraction like "1/2", "3/4" etc.
+  const fractionMatch = option.match(/^(\d+)\/(\d+)$/);
+  if (fractionMatch) {
+    return (
+      <div className="flex flex-col items-center leading-none">
+        <span className="font-display text-2xl font-bold text-gray-900">{fractionMatch[1]}</span>
+        <div className="w-full h-[3px] rounded-full bg-gray-800 my-1" />
+        <span className="font-display text-2xl font-bold text-gray-900">{fractionMatch[2]}</span>
+      </div>
+    );
+  }
+  // Default: inline math or plain text
+  return (
+    <span className="font-display text-xl font-bold text-gray-900">
+      {renderMathText(option)}
+    </span>
+  );
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface QuestionComponentProps {
   question: QuestionInstance;
-  onAnswer: (answer: string) => void;
+  onAnswer: (answer: string) => void;   // called on selection (or on submit via parent)
   disabled?: boolean;
-  selectedAnswer?: string | null;
+  selectedAnswer?: string | null;       // currently highlighted option
+  submittedAnswer?: string | null;      // answer that was actually submitted (for correct/wrong display)
   isCorrect?: boolean | null;
 }
-
-const OPTION_LABELS = ['A', 'B', 'C', 'D'];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -44,129 +64,104 @@ export function MultipleChoice({
   onAnswer,
   disabled = false,
   selectedAnswer = null,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  submittedAnswer = null,
   isCorrect: _isCorrect = null,
 }: QuestionComponentProps) {
   const options = question.options ?? [];
-  const answered = selectedAnswer !== null;
+  const isSubmitted = submittedAnswer !== null;
 
-  function getOptionState(option: string) {
-    if (!answered) return 'default';
-    const isCorrectAnswer = option === question.correctAnswer;
-    const isSelected = option === selectedAnswer;
-    if (isCorrectAnswer) return 'correct';
-    if (isSelected && !isCorrectAnswer) return 'wrong';
-    return 'neutral';
-  }
-
-  function getOptionClasses(state: string) {
-    switch (state) {
-      case 'correct':
-        return 'border-success bg-success-bg';
-      case 'wrong':
-        return 'border-error bg-error-bg';
-      case 'neutral':
-        return 'border-gray-100 bg-white opacity-50';
-      default:
-        return 'border-gray-200 bg-white hover:border-primary hover:bg-primary-lighter active:scale-[0.98]';
-    }
-  }
-
-  function getLabelClasses(state: string) {
-    switch (state) {
-      case 'correct':
-        return 'bg-success text-white';
-      case 'wrong':
-        return 'bg-error text-white';
-      default:
-        return 'bg-gray-100 text-gray-600';
-    }
+  function getState(option: string) {
+    if (!isSubmitted) return selectedAnswer === option ? 'selected' : 'idle';
+    if (option === question.correctAnswer) return 'correct';
+    if (option === submittedAnswer) return 'wrong';
+    return 'dim';
   }
 
   const containerVariants = {
     hidden: {},
-    visible: {
-      transition: { staggerChildren: 0.05 },
-    },
+    visible: { transition: { staggerChildren: 0.06 } },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 16 },
-    visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 400, damping: 28 } },
+    hidden: { opacity: 0, y: 14 },
+    visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 380, damping: 28 } },
   };
 
   return (
-    <div className="flex flex-col gap-4 w-full">
-      <motion.div
-        className="flex flex-col gap-3"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        {options.map((option, index) => {
-          const state = getOptionState(option);
-          const isCorrectAnswer = option === question.correctAnswer;
-          const isSelected = option === selectedAnswer;
-          const canTap = !disabled && !answered;
+    <motion.div
+      className="flex flex-col gap-2.5 w-full"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      {options.map((option) => {
+        const state = getState(option);
+        const canTap = !disabled && !isSubmitted;
 
-          /* Border / background per state */
-          const borderColor =
-            state === 'correct' ? '#10B981' :
-            state === 'wrong'   ? '#F43F5E' :
-            state === 'default' ? (isSelected ? '#8A2BE2' : '#E5E7EB') : '#E5E7EB';
+        const borderColor =
+          state === 'correct'  ? '#10B981' :
+          state === 'wrong'    ? '#F43F5E' :
+          state === 'selected' ? '#8A2BE2' : '#E5E7EB';
 
-          const bgColor =
-            state === 'correct' ? '#ECFDF5' :
-            state === 'wrong'   ? '#FFF1F2' :
-            state === 'default' ? (isSelected ? '#F5F0FF' : '#FFFFFF') : '#FFFFFF';
+        const bgColor =
+          state === 'correct'  ? '#ECFDF5' :
+          state === 'wrong'    ? '#FFF1F2' :
+          state === 'selected' ? '#F5F0FF' :
+          state === 'dim'      ? '#FAFAFA' : '#FFFFFF';
 
-          return (
-            <motion.button
-              key={option}
-              variants={itemVariants}
-              whileTap={canTap ? { scale: 0.985, y: 2 } : undefined}
-              disabled={disabled || answered}
-              onClick={() => !disabled && !answered && onAnswer(option)}
-              className={cn(
-                'relative w-full flex items-center gap-3 rounded-2xl border-2 text-left select-none',
-                'transition-colors duration-150',
-                (disabled || answered) ? 'cursor-default' : 'cursor-pointer',
-                state === 'neutral' && 'opacity-50',
-              )}
-              style={{
-                borderColor,
-                background: bgColor,
-                padding: '18px 16px',
-                boxShadow: canTap ? '0 3px 0 0 #D1D5DB' : 'none',
-              }}
+        const radioFill =
+          state === 'selected' ? '#8A2BE2' :
+          state === 'correct'  ? '#10B981' :
+          state === 'wrong'    ? '#F43F5E' : 'transparent';
+
+        const radioStroke =
+          state === 'selected' || state === 'correct' || state === 'wrong'
+            ? 'transparent'
+            : '#D1D5DB';
+
+        return (
+          <motion.button
+            key={option}
+            variants={itemVariants}
+            onClick={() => canTap && onAnswer(option)}
+            disabled={disabled || isSubmitted}
+            className={cn(
+              'relative w-full flex items-center gap-4 rounded-2xl border-2 text-left transition-colors duration-150',
+              canTap ? 'cursor-pointer active:scale-[0.99]' : 'cursor-default',
+              state === 'dim' && 'opacity-40',
+            )}
+            style={{
+              borderColor,
+              background: bgColor,
+              padding: '16px 20px',
+            }}
+            whileTap={canTap ? { scale: 0.985 } : undefined}
+          >
+            {/* Radio circle */}
+            <div
+              className="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors"
+              style={{ borderColor: radioStroke || radioFill, background: radioFill }}
             >
-              {/* Option label */}
-              <span
-                className={cn(
-                  'shrink-0 w-9 h-9 rounded-full flex items-center justify-center',
-                  'font-display font-bold text-sm transition-colors duration-150',
-                  getLabelClasses(state),
-                )}
-              >
-                {OPTION_LABELS[index] ?? String.fromCharCode(65 + index)}
-              </span>
-
-              {/* Option text — big and bold like the reference */}
-              <span className="font-display text-xl font-bold text-gray-900 flex-1">
-                {renderMathText(option)}
-              </span>
-
-              {/* Feedback icon */}
-              {answered && isCorrectAnswer && (
-                <span className="ml-auto font-bold text-xl" style={{ color: '#10B981' }}>✓</span>
+              {(state === 'selected' || state === 'correct' || state === 'wrong') && (
+                <div className="w-2.5 h-2.5 rounded-full bg-white" />
               )}
-              {answered && isSelected && !isCorrectAnswer && (
-                <span className="ml-auto font-bold text-xl" style={{ color: '#F43F5E' }}>✗</span>
-              )}
-            </motion.button>
-          );
-        })}
-      </motion.div>
-    </div>
+            </div>
+
+            {/* Option content */}
+            <div className="flex-1 flex items-center justify-start">
+              {renderOptionContent(option)}
+            </div>
+
+            {/* Post-submit icon */}
+            {state === 'correct' && (
+              <span className="ml-auto text-success font-bold text-lg">✓</span>
+            )}
+            {state === 'wrong' && (
+              <span className="ml-auto text-error font-bold text-lg">✗</span>
+            )}
+          </motion.button>
+        );
+      })}
+    </motion.div>
   );
 }
