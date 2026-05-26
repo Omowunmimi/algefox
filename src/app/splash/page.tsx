@@ -50,7 +50,7 @@ export default function SplashPage() {
       if (session.onboardingCompleted) {
         router.replace('/home');
       } else {
-        router.replace('/onboarding/profile');
+        router.replace('/mascot-intro');
       }
     }, 2200);
 

@@ -196,14 +196,8 @@ export function EmailAuthForm({ mode, onSuccess, className }: EmailAuthFormProps
         onSuccess?.();
 
         if (!profile || !profile.onboarding_completed) {
-          const step = profile?.onboarding_step ?? 0;
-          if (step <= 1) {
-            router.push('/onboarding/profile');
-          } else if (step === 2) {
-            router.push('/onboarding/skill-level');
-          } else {
-            router.push('/home');
-          }
+          // New or mid-onboarding user → Foxy intro
+          router.push('/mascot-intro');
         } else {
           router.push('/home');
         }
