@@ -21,7 +21,7 @@ export function useAuth(): UseAuthReturn {
   const profile = useUserStore((s) => s.profile);
   const isLoading = useUserStore((s) => s.isLoading);
   const setProfile = useUserStore((s) => s.setProfile);
-  const setStats = useUserStore((s) => s.setStats);
+  const mergeStats = useUserStore((s) => s.mergeStats);
   const setLoading = useUserStore((s) => s.setLoading);
   const setError = useUserStore((s) => s.setError);
   const reset = useUserStore((s) => s.reset);
@@ -74,14 +74,15 @@ export function useAuth(): UseAuthReturn {
             questionsAnswered: statsData.questions_answered ?? 0,
             questionsCorrect: statsData.questions_correct ?? 0,
           };
-          setStats(mapped);
+          // Merge instead of replace — keeps optimistic local updates
+          mergeStats(mapped);
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load profile';
         setError(message);
       }
     },
-    [setProfile, setStats, setError],
+    [setProfile, mergeStats, setError],
   );
 
   useEffect(() => {

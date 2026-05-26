@@ -17,12 +17,14 @@ interface EmailAuthFormProps {
 }
 
 interface FormState {
+  username: string;
   email: string;
   password: string;
   confirmPassword: string;
 }
 
 interface FormErrors {
+  username?: string;
   email?: string;
   password?: string;
   confirmPassword?: string;
@@ -59,6 +61,14 @@ function getFriendlyError(message: string, mode: 'signin' | 'signup'): string {
 function validate(values: FormState, mode: 'signin' | 'signup'): FormErrors {
   const errors: FormErrors = {};
 
+  if (mode === 'signup') {
+    if (!values.username.trim()) {
+      errors.username = 'What should we call you?';
+    } else if (values.username.trim().length < 2) {
+      errors.username = 'Name must be at least 2 characters.';
+    }
+  }
+
   if (!values.email) {
     errors.email = 'Email is required.';
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
@@ -88,6 +98,7 @@ export function EmailAuthForm({ mode, onSuccess, className }: EmailAuthFormProps
   const router = useRouter();
 
   const [values, setValues] = useState<FormState>({
+    username: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -129,6 +140,7 @@ export function EmailAuthForm({ mode, onSuccess, className }: EmailAuthFormProps
         const { data, error } = await supabase.auth.signUp({
           email: values.email,
           password: values.password,
+          options: { data: { username: values.username.trim() } },
         });
 
         if (error) {
@@ -140,6 +152,18 @@ export function EmailAuthForm({ mode, onSuccess, className }: EmailAuthFormProps
         if (!data.session) {
           setEmailConfirmPending(true);
           return;
+        }
+
+        // Store username in profiles table
+        if (data.user) {
+          await supabase.from('profiles').upsert({
+            id: data.user.id,
+            username: values.username.trim(),
+            avatar_id: 'fox-1',
+            auth_provider: 'email',
+            onboarding_completed: false,
+            onboarding_step: 0,
+          });
         }
 
         // Session created immediately (email confirmation disabled in Supabase)
@@ -210,7 +234,7 @@ export function EmailAuthForm({ mode, onSuccess, className }: EmailAuthFormProps
           type="button"
           onClick={() => {
             setEmailConfirmPending(false);
-            setValues({ email: '', password: '', confirmPassword: '' });
+            setValues({ username: '', email: '', password: '', confirmPassword: '' });
           }}
           className="font-ui text-sm text-primary underline underline-offset-2 hover:text-primary-dark"
         >
@@ -230,6 +254,20 @@ export function EmailAuthForm({ mode, onSuccess, className }: EmailAuthFormProps
       noValidate
       className={cn('flex flex-col gap-4', className)}
     >
+      {/* Username — signup only */}
+      {mode === 'signup' && (
+        <Input
+          label="Your name"
+          type="text"
+          autoComplete="name"
+          placeholder="e.g. Amara or Chidi"
+          value={values.username}
+          onChange={handleChange('username')}
+          error={errors.username}
+          disabled={isLoading}
+        />
+      )}
+
       {/* Email */}
       <Input
         label="Email"

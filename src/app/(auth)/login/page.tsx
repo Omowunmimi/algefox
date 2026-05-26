@@ -111,15 +111,15 @@ function FoxPanel() {
 
 export default function LoginPage() {
   return (
-    <div className="h-screen flex overflow-hidden bg-white">
-      {/* Desktop left: Fox panel */}
-      <div className="hidden lg:block lg:w-1/2">
+    <div className="flex bg-white min-h-screen lg:h-screen lg:overflow-hidden">
+      {/* Desktop left: Fox panel (sticky, full height) */}
+      <div className="hidden lg:flex lg:w-1/2 lg:flex-shrink-0">
         <FoxPanel />
       </div>
 
-      {/* Right: scroll container */}
-      <div className="flex-1 overflow-y-auto min-h-0 bg-white">
-        <div className="min-h-full flex flex-col items-center justify-start lg:justify-center px-6 pt-10 pb-10 lg:py-12">
+      {/* Right: scrollable on all screen sizes */}
+      <div className="flex-1 overflow-y-auto bg-white">
+        <div className="flex flex-col items-center justify-start lg:justify-center px-6 pt-10 pb-10 lg:py-12 min-h-screen lg:min-h-full">
 
           {/* Mobile: Foxy floating above form */}
           <div className="lg:hidden flex flex-col items-center mb-6">
@@ -143,7 +143,7 @@ export default function LoginPage() {
               <p className="font-ui text-sm text-gray-500 mt-1">Login to your account to continue.</p>
             </div>
 
-            {/* Google */}
+            {/* Google — primary CTA */}
             <GoogleButton mode="signin" />
 
             <Divider />

@@ -9,8 +9,8 @@ import type { Database } from '@/types/database.types';
  * Flow:
  *  1. Exchange the code for a session
  *  2. Check if the user has a profile
- *  3a. New user  → create profile + user_stats + streaks → /onboarding/profile
- *  3b. Mid-onboarding → resume at correct step
+ *  3a. New user       → create profile + user_stats + streaks → /mascot-intro
+ *  3b. Mid-onboarding → /mascot-intro (they never completed intro)
  *  3c. Returning user → /home
  */
 export async function GET(request: NextRequest) {
@@ -98,16 +98,13 @@ export async function GET(request: NextRequest) {
       longest_streak: 0,
     });
 
-    // New Google user → profile setup with prefill from Google account
-    return NextResponse.redirect(
-      `${origin}/onboarding/profile?prefill=true`,
-    );
+    // New user → Foxy intro screen
+    return NextResponse.redirect(`${origin}/mascot-intro`);
   }
 
-  // ── Mid-onboarding: resume where they left off ───────────
+  // ── Mid-onboarding: never saw the intro → send there ─────
   if (!profile.onboarding_completed) {
-    const resumePath = getOnboardingResumePath(profile.onboarding_step);
-    return NextResponse.redirect(`${origin}${resumePath}`);
+    return NextResponse.redirect(`${origin}/mascot-intro`);
   }
 
   // ── Returning user: go home (or intended destination) ────
@@ -126,7 +123,7 @@ function generateUsername(user: { email?: string; user_metadata?: { full_name?: 
     user.email?.split('@')[0] ||
     'student';
 
-  // Clean: lowercase, replace spaces with underscores, keep alphanumeric + undersscores
+  // Clean: lowercase, replace spaces with underscores, keep alphanumeric + underscores
   const cleaned = name
     .toLowerCase()
     .replace(/\s+/g, '_')
@@ -136,16 +133,4 @@ function generateUsername(user: { email?: string; user_metadata?: { full_name?: 
   // Append random 4-digit suffix to reduce collisions
   const suffix = Math.floor(1000 + Math.random() * 9000);
   return `${cleaned}_${suffix}`;
-}
-
-function getOnboardingResumePath(step: number): string {
-  switch (step) {
-    case 0:
-    case 1:
-      return '/onboarding/profile';
-    case 2:
-      return '/onboarding/skill-level';
-    default:
-      return '/home';
-  }
 }

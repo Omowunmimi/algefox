@@ -6,20 +6,20 @@ import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { AyoMascot } from '@/components/mascot/AyoMascot';
-import { SpeechBubble } from '@/components/mascot/SpeechBubble';
+import { FoxyImage } from '@/components/mascot/FoxyImage';
+import { useUserStore } from '@/stores/useUserStore';
 
 // ─── Avatar options ───────────────────────────────────────────────────────────
 
 const AVATARS = [
-  { id: 'avatar-01', bg: 'bg-secondary',       emoji: '🦸' },
-  { id: 'avatar-02', bg: 'bg-primary',          emoji: '🧑‍🎓' },
-  { id: 'avatar-03', bg: 'bg-blue-500',         emoji: '🧙' },
-  { id: 'avatar-04', bg: 'bg-green-500',        emoji: '🦊' },
-  { id: 'avatar-05', bg: 'bg-pink-500',         emoji: '👩‍🚀' },
-  { id: 'avatar-06', bg: 'bg-gold',             emoji: '🏆' },
-  { id: 'avatar-07', bg: 'bg-teal-500',         emoji: '🎯' },
-  { id: 'avatar-08', bg: 'bg-red-500',          emoji: '⚡' },
+  { id: 'avatar-01', bg: '#EDE9FE', emoji: '🦸' },
+  { id: 'avatar-02', bg: '#DBEAFE', emoji: '🧑‍🎓' },
+  { id: 'avatar-03', bg: '#DCFCE7', emoji: '🧙' },
+  { id: 'avatar-04', bg: '#FEF3C7', emoji: '🦊' },
+  { id: 'avatar-05', bg: '#FCE7F3', emoji: '👩‍🚀' },
+  { id: 'avatar-06', bg: '#FEF9C3', emoji: '🏆' },
+  { id: 'avatar-07', bg: '#CCFBF1', emoji: '🎯' },
+  { id: 'avatar-08', bg: '#FEE2E2', emoji: '⚡' },
 ];
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
@@ -115,7 +115,27 @@ function ProfileSetupInner() {
         return;
       }
 
-      router.push('/onboarding/skill-level');
+      // Fetch the full profile and save to Zustand store so mascot-intro has the username
+      const { data: fullProfile } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_id, auth_provider, onboarding_completed, onboarding_step, skill_level, participant_id')
+        .eq('id', user.id)
+        .single();
+
+      if (fullProfile) {
+        useUserStore.getState().setProfile({
+          id: fullProfile.id,
+          username: fullProfile.username,
+          avatarId: fullProfile.avatar_id,
+          authProvider: fullProfile.auth_provider,
+          onboardingCompleted: fullProfile.onboarding_completed,
+          onboardingStep: fullProfile.onboarding_step,
+          skillLevel: fullProfile.skill_level ?? null,
+          participantId: fullProfile.participant_id ?? null,
+        });
+      }
+
+      router.push('/mascot-intro');
     } catch {
       setError('Something went wrong. Please try again.');
       setIsLoading(false);
@@ -141,33 +161,66 @@ function ProfileSetupInner() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-6 py-4 safe-top">
-        {/* Progress indicator */}
-        <div className="flex items-center justify-between mb-1">
-          <span className="font-ui text-sm font-semibold text-gray-500">Step 1 of 2</span>
-          <span className="font-ui text-sm text-gray-400">Profile</span>
-        </div>
-        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div className="h-full w-1/2 bg-primary rounded-full transition-all duration-500" />
-        </div>
-      </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-6 py-6">
-        {/* Mascot + speech bubble */}
-        <div className="flex items-flex-start gap-3 mb-8">
-          <AyoMascot expression="encouraging" size={80} animated={true} />
-          <div className="pt-2">
-            <SpeechBubble
-              message="What should I call you? Pick a cool username!"
-              variant="default"
+      <div className="flex-1 overflow-y-auto px-6 py-8">
+
+        {/* Foxy + speech bubble */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+          className="flex flex-col items-center mb-8"
+        >
+          <motion.div
+            animate={{ y: [0, -6, 0] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <FoxyImage expression="excited" size={120} />
+          </motion.div>
+
+          <div
+            className="mt-4 w-full max-w-xs rounded-2xl px-4 py-3 text-center relative"
+            style={{
+              background: '#FFFFFF',
+              border: '2px solid #EDE9FE',
+              boxShadow: '0 4px 12px rgba(138,43,226,0.08)',
+            }}
+          >
+            {/* Tail pointing up */}
+            <span
+              className="absolute -top-2.5 left-1/2 -translate-x-1/2"
+              aria-hidden="true"
+              style={{
+                width: 0, height: 0,
+                borderLeft: '9px solid transparent',
+                borderRight: '9px solid transparent',
+                borderBottom: '11px solid #EDE9FE',
+              }}
             />
+            <span
+              className="absolute -top-[7px] left-1/2 -translate-x-1/2"
+              aria-hidden="true"
+              style={{
+                width: 0, height: 0,
+                borderLeft: '8px solid transparent',
+                borderRight: '8px solid transparent',
+                borderBottom: '10px solid #FFFFFF',
+              }}
+            />
+            <p className="font-ui text-sm font-semibold text-gray-800">
+              What should I call you? Pick a cool username!
+            </p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Username section */}
-        <div className="mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1, ease: 'easeOut' }}
+          className="mb-8"
+        >
           <Input
             label="Your username"
             placeholder="e.g. mathchamp99"
@@ -192,14 +245,19 @@ function ProfileSetupInner() {
               </span>
             }
           />
-        </div>
+        </motion.div>
 
         {/* Avatar section */}
-        <div className="mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.18, ease: 'easeOut' }}
+          className="mb-8"
+        >
           <p className="font-ui text-sm font-semibold text-gray-700 mb-3">
             Choose your avatar
           </p>
-          <div className="flex gap-3 overflow-x-auto pb-2 -mx-6 px-6 no-select">
+          <div className="flex gap-3 overflow-x-auto pb-2 -mx-6 px-6">
             {AVATARS.map((avatar) => {
               const isSelected = selectedAvatar === avatar.id;
               return (
@@ -209,27 +267,28 @@ function ProfileSetupInner() {
                   onClick={() => setSelectedAvatar(avatar.id)}
                   aria-label={`Select ${avatar.id}`}
                   aria-pressed={isSelected}
-                  className={`
-                    flex-none flex items-center justify-center
-                    w-16 h-16 rounded-2xl text-2xl
-                    transition-all duration-150
-                    ${avatar.bg}
-                    ${isSelected
-                      ? 'ring-4 ring-primary ring-offset-2 scale-105'
-                      : 'opacity-80 hover:opacity-100'
-                    }
-                  `}
+                  className="flex-none flex items-center justify-center w-16 h-16 rounded-2xl text-2xl transition-all duration-150"
+                  style={{
+                    background: avatar.bg,
+                    outline: isSelected ? '3px solid #8A2BE2' : '3px solid transparent',
+                    outlineOffset: '2px',
+                    transform: isSelected ? 'scale(1.08)' : undefined,
+                    boxShadow: isSelected ? '0 4px 12px rgba(138,43,226,0.25)' : '0 2px 6px rgba(0,0,0,0.06)',
+                  }}
                 >
                   {avatar.emoji}
                 </motion.button>
               );
             })}
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Sticky footer CTA */}
-      <div className="bg-white border-t border-gray-100 px-6 py-4 safe-bottom">
+      <div
+        className="bg-white px-6 py-4"
+        style={{ borderTop: '1px solid #F3F4F6', boxShadow: '0 -4px 16px rgba(0,0,0,0.04)' }}
+      >
         <Button
           variant="primary"
           size="lg"
@@ -237,7 +296,6 @@ function ProfileSetupInner() {
           disabled={!isValid}
           isLoading={isLoading}
           onClick={handleContinue}
-          style={isValid ? { boxShadow: 'var(--shadow-physical-primary)' } : undefined}
         >
           Continue
         </Button>

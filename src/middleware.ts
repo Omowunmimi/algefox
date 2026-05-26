@@ -22,7 +22,7 @@ const PROTECTED_ROUTES = [
 const AUTH_ROUTES = ['/login', '/signup'];
 
 /** Onboarding routes — require auth but redirect based on step. */
-const ONBOARDING_ROUTES = ['/onboarding'];
+const ONBOARDING_ROUTES = ['/onboarding', '/mascot-intro'];
 
 /* ============================================================
    MIDDLEWARE
@@ -69,19 +69,20 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  // ── Authenticated users visiting auth routes → /home ────────
+  // ── Authenticated users visiting auth routes → check onboarding ─────
   const isAuthRoute = AUTH_ROUTES.some((r) => pathname.startsWith(r));
   if (isAuthRoute && user) {
     // Check onboarding status before bouncing to home
     const { data: profile } = await supabase
       .from('profiles')
-      .select('onboarding_completed, onboarding_step')
+      .select('onboarding_completed')
       .eq('id', user.id)
       .single();
 
     if (profile && !profile.onboarding_completed) {
+      // Still needs to see the Foxy intro
       const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = getOnboardingPath(profile.onboarding_step);
+      redirectUrl.pathname = '/mascot-intro';
       return NextResponse.redirect(redirectUrl);
     }
 
@@ -91,19 +92,6 @@ export async function middleware(request: NextRequest) {
   }
 
   return supabaseResponse;
-}
-
-/** Maps onboarding_step integer to the correct onboarding route. */
-function getOnboardingPath(step: number): string {
-  switch (step) {
-    case 0:
-    case 1:
-      return '/onboarding/profile';
-    case 2:
-      return '/onboarding/skill-level';
-    default:
-      return '/home';
-  }
 }
 
 /* ============================================================

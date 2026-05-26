@@ -86,7 +86,7 @@ export default function ProfilePage() {
   const sfxEnabled = useAudioStore((s) => s.sfxEnabled);
   const toggleSfx = useAudioStore((s) => s.toggleSfx);
 
-  const username = profile?.username ?? 'Student';
+  const username = profile?.username ?? 'Champion';
   const avatarId = profile?.avatarId ?? '';
   const participantId = profile?.participantId;
   const lessonsCompleted = stats?.lessonsCompleted ?? 0;
@@ -109,13 +109,17 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-8">
       {/* ── Profile header ── */}
-      <div className="bg-white px-5 pt-8 pb-6 border-b border-gray-100">
+      <div
+        className="px-5 pt-8 pb-6"
+        style={{ background: 'linear-gradient(135deg, #2563EB 0%, #1E40AF 100%)' }}
+      >
         <div className="flex flex-col items-center gap-3">
           <Avatar avatarId={avatarId} username={username} size="xl" bordered />
           <div className="text-center">
-            <h1 className="font-display text-2xl font-bold text-gray-900">{username}</h1>
+            <h1 className="font-display text-2xl font-bold text-white">{username}</h1>
+            <p className="font-ui text-sm text-white/70 mt-0.5">AlgeFox Student</p>
             {participantId && (
-              <span className="inline-block mt-1 font-ui text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+              <span className="inline-block mt-2 font-ui text-xs font-semibold text-white bg-white/20 px-3 py-1 rounded-full">
                 ID: {participantId}
               </span>
             )}

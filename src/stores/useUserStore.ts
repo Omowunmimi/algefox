@@ -33,13 +33,18 @@ interface UserState {
   isLoading: boolean;
   error: string | null;
 
+  /** sectionSlug → highest level number completed (1-based) */
+  completedSections: Record<string, number>;
+
   /* Actions */
   setProfile: (profile: UserProfile) => void;
   setStats: (stats: UserStats) => void;
+  mergeStats: (incoming: UserStats) => void;
   updateProfile: (partial: Partial<UserProfile>) => void;
   updateStats: (partial: Partial<UserStats>) => void;
   loseHeart: () => void;
   addXp: (amount: number) => void;
+  completeSection: (slug: string, level: number) => void;
   reset: () => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -48,15 +53,36 @@ interface UserState {
 /* ── Store ─────────────────────────────────────────────────── */
 export const useUserStore = create<UserState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       profile: null,
       stats: null,
       isLoading: false,
       error: null,
+      completedSections: {},
 
       setProfile: (profile) => set({ profile }),
 
       setStats: (stats) => set({ stats }),
+
+      // Merge incoming DB stats — take max for accumulative fields so
+      // local optimistic updates are never overwritten by a stale DB read
+      mergeStats: (incoming) =>
+        set((state) => {
+          const local = state.stats;
+          if (!local) return { stats: incoming };
+          return {
+            stats: {
+              totalXp: Math.max(local.totalXp, incoming.totalXp),
+              level: Math.max(local.level, incoming.level),
+              hearts: incoming.hearts, // always trust DB for hearts
+              maxHearts: incoming.maxHearts,
+              heartsLastRefill: incoming.heartsLastRefill,
+              lessonsCompleted: Math.max(local.lessonsCompleted, incoming.lessonsCompleted),
+              questionsAnswered: Math.max(local.questionsAnswered, incoming.questionsAnswered),
+              questionsCorrect: Math.max(local.questionsCorrect, incoming.questionsCorrect),
+            },
+          };
+        }),
 
       updateProfile: (partial) =>
         set((state) => ({
@@ -65,7 +91,13 @@ export const useUserStore = create<UserState>()(
 
       updateStats: (partial) =>
         set((state) => ({
-          stats: state.stats ? { ...state.stats, ...partial } : null,
+          stats: {
+            totalXp: 0, level: 1, hearts: 5, maxHearts: 5,
+            heartsLastRefill: null, lessonsCompleted: 0,
+            questionsAnswered: 0, questionsCorrect: 0,
+            ...(state.stats ?? {}),
+            ...partial,
+          },
         })),
 
       loseHeart: () =>
@@ -77,14 +109,27 @@ export const useUserStore = create<UserState>()(
 
       addXp: (amount) =>
         set((state) => {
-          if (!state.stats) return state;
-          const totalXp = state.stats.totalXp + amount;
-          // Simple level calculation — level = floor(sqrt(totalXp / 100)) + 1
+          const base = state.stats ?? {
+            totalXp: 0, level: 1, hearts: 5, maxHearts: 5,
+            heartsLastRefill: null, lessonsCompleted: 0,
+            questionsAnswered: 0, questionsCorrect: 0,
+          };
+          const totalXp = base.totalXp + amount;
           const level = Math.floor(Math.sqrt(totalXp / 100)) + 1;
-          return { stats: { ...state.stats, totalXp, level } };
+          return { stats: { ...base, totalXp, level } };
         }),
 
-      reset: () => set({ profile: null, stats: null, isLoading: false, error: null }),
+      completeSection: (slug, level) =>
+        set((state) => {
+          const prev = state.completedSections[slug] ?? 0;
+          if (level <= prev) return state; // already recorded a higher level
+          return {
+            completedSections: { ...state.completedSections, [slug]: level },
+          };
+        }),
+
+      reset: () =>
+        set({ profile: null, stats: null, isLoading: false, error: null, completedSections: {} }),
 
       setLoading: (isLoading) => set({ isLoading }),
 
@@ -92,10 +137,10 @@ export const useUserStore = create<UserState>()(
     }),
     {
       name: 'algefox-user',
-      // Only persist non-sensitive UI state; auth is managed by Supabase
       partialize: (state) => ({
         profile: state.profile,
         stats: state.stats,
+        completedSections: state.completedSections,
       }),
     },
   ),
