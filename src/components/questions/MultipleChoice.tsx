@@ -66,9 +66,9 @@ export function MultipleChoice({
       case 'wrong':
         return 'border-error bg-error-bg';
       case 'neutral':
-        return 'border-gray-200 bg-white opacity-60';
+        return 'border-gray-100 bg-white opacity-50';
       default:
-        return 'border-gray-200 bg-white hover:border-primary hover:bg-primary-lighter';
+        return 'border-gray-200 bg-white hover:border-primary hover:bg-primary-lighter active:scale-[0.98]';
     }
   }
 
@@ -98,7 +98,7 @@ export function MultipleChoice({
   return (
     <div className="flex flex-col gap-4 w-full">
       {/* Question text */}
-      <p className="font-display text-xl font-semibold text-gray-900 leading-snug px-1">
+      <p className="font-display text-2xl font-bold text-gray-900 leading-snug px-1 text-center">
         {renderMathText(question.questionText)}
       </p>
 

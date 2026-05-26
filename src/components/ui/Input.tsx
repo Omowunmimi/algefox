@@ -66,7 +66,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           disabled={disabled}
           className={cn(
             // Base
-            'w-full rounded-xl border-2 bg-white font-ui text-base text-gray-900',
+            'w-full rounded-full border-2 bg-white font-ui text-base text-gray-900',
             'placeholder:text-gray-400',
             // Spacing — adjust for icons
             leftIcon  ? 'pl-10 pr-4' : 'px-4',

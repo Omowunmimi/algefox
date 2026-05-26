@@ -2,9 +2,8 @@
 
 import { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FoxyImage } from '@/components/mascot/FoxyImage';
 import { Button } from '@/components/ui/Button';
-import { cn } from '@/lib/utils/cn';
-import type { MascotExpression } from '@/types/gamification.types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -14,10 +13,9 @@ interface FeedbackOverlayProps {
   explanation: string;
   correctAnswer?: string;
   onContinue: () => void;
-  mascotExpression?: MascotExpression;
 }
 
-// ─── Ayo phrases ──────────────────────────────────────────────────────────────
+// ─── Phrases ──────────────────────────────────────────────────────────────────
 
 const CORRECT_PHRASES = [
   "Ehen! That's right! 🎉",
@@ -27,14 +25,56 @@ const CORRECT_PHRASES = [
 ];
 
 const INCORRECT_PHRASES = [
+  "You're Close!",
+  "Almost There!",
+  "So Close!",
+  "Not Quite!",
+];
+
+const INCORRECT_SUBTITLES = [
+  "Let's try that one more time!",
   "No wahala — here's the trick:",
   "Almost! Let's see how:",
   "Don't worry, let's break it down:",
-  'Oya, check this out:',
 ];
 
 function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
+}
+
+// ─── Sparkle dots ─────────────────────────────────────────────────────────────
+
+function SparkleStars() {
+  const stars = [
+    { x: -14, y: -20, color: '#FCD34D', size: 10 },
+    { x: 16,  y: -16, color: '#F59E0B', size: 8  },
+    { x: -12, y: 16,  color: '#FCD34D', size: 7  },
+    { x: 18,  y: 12,  color: '#FBBF24', size: 9  },
+  ];
+  return (
+    <>
+      {stars.map((s, i) => (
+        <motion.svg
+          key={i}
+          className="absolute pointer-events-none"
+          width={s.size}
+          height={s.size}
+          viewBox="0 0 10 10"
+          style={{
+            left: `calc(50% + ${s.x}px)`,
+            top: `calc(50% + ${s.y}px)`,
+          }}
+          animate={{ scale: [0.7, 1.3, 0.7], opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.3, ease: 'easeInOut' }}
+        >
+          <polygon
+            points="5,0 6.2,3.8 10,3.8 6.9,6.1 8.1,10 5,7.6 1.9,10 3.1,6.1 0,3.8 3.8,3.8"
+            fill={s.color}
+          />
+        </motion.svg>
+      ))}
+    </>
+  );
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -46,9 +86,14 @@ export function FeedbackOverlay({
   correctAnswer,
   onContinue,
 }: FeedbackOverlayProps) {
-  // Stable random phrases per render (only changes when isVisible flips on)
-  const ayoPhrase = useMemo(
+  const heading = useMemo(
     () => (isCorrect ? pickRandom(CORRECT_PHRASES) : pickRandom(INCORRECT_PHRASES)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isVisible, isCorrect],
+  );
+
+  const subtitle = useMemo(
+    () => (isCorrect ? null : pickRandom(INCORRECT_SUBTITLES)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [isVisible, isCorrect],
   );
@@ -56,80 +101,91 @@ export function FeedbackOverlay({
   return (
     <AnimatePresence>
       {isVisible && (
-        <motion.div
-          key="feedback-overlay"
-          initial={{ y: '100%' }}
-          animate={{ y: 0 }}
-          exit={{ y: '100%' }}
-          transition={{ type: 'spring', stiffness: 400, damping: 40 }}
-          className={cn(
-            'fixed bottom-0 left-0 right-0 z-40',
-            'border-t-4',
-            isCorrect
-              ? 'bg-success-bg border-success'
-              : 'bg-error-bg border-error',
-          )}
-        >
-          <div className="p-6 pb-safe flex flex-col gap-3 max-w-lg mx-auto">
-            {/* Header */}
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  'font-display text-xl font-bold',
-                  isCorrect ? 'text-success' : 'text-error',
-                )}
-              >
-                {isCorrect ? '✓ Correct!' : '✗ Not quite'}
-              </span>
-            </div>
+        <>
+          {/* Backdrop */}
+          <motion.div
+            key="feedback-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.35 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-30 bg-black pointer-events-none"
+          />
 
-            {/* Ayo speech */}
-            <p
-              className={cn(
-                'font-ui text-sm font-semibold',
-                isCorrect ? 'text-success-dark' : 'text-error',
-              )}
-            >
-              {ayoPhrase}
-            </p>
+          {/* Bottom sheet */}
+          <motion.div
+            key="feedback-sheet"
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', stiffness: 380, damping: 38 }}
+            className="fixed bottom-0 left-0 right-0 z-40 bg-white"
+            style={{
+              borderRadius: '24px 24px 0 0',
+              boxShadow: '0 -8px 40px rgba(0,0,0,0.18)',
+              paddingBottom: 'env(safe-area-inset-bottom)',
+            }}
+          >
+            <div className="px-6 pt-6 pb-4 flex flex-col gap-4 max-w-lg mx-auto">
+              {/* Mascot in circle */}
+              <div className="flex flex-col items-center gap-3">
+                <div
+                  className="relative flex items-center justify-center rounded-full"
+                  style={{
+                    width: 88,
+                    height: 88,
+                    background: isCorrect ? '#D1FAE5' : '#FAF7F0',
+                  }}
+                >
+                  <FoxyImage
+                    expression={isCorrect ? 'celebrating' : 'encouraging'}
+                    size={72}
+                  />
+                  {!isCorrect && <SparkleStars />}
+                </div>
 
-            {/* Correct answer box (only when wrong) */}
-            {!isCorrect && correctAnswer && (
-              <div
-                className={cn(
-                  'rounded-xl border-2 border-error bg-white px-4 py-2',
-                )}
-              >
-                <span className="font-ui text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  The answer is:
-                </span>
-                <p className="font-display text-base font-bold text-gray-900 mt-0.5">
-                  {correctAnswer}
-                </p>
+                {/* Heading */}
+                <div className="text-center">
+                  <h3 className="font-display text-2xl font-bold text-gray-900">
+                    {heading}
+                  </h3>
+                  {subtitle && (
+                    <p className="font-ui text-sm text-gray-500 mt-1">{subtitle}</p>
+                  )}
+                </div>
               </div>
-            )}
 
-            {/* Explanation */}
-            {explanation && (
-              <p className="font-ui text-sm text-gray-700 leading-relaxed">
-                {explanation}
-              </p>
-            )}
-
-            {/* Continue button */}
-            <Button
-              variant={isCorrect ? 'success' : 'outline'}
-              size="lg"
-              fullWidth
-              onClick={onContinue}
-              className={cn(
-                !isCorrect && 'border-error text-error hover:bg-error hover:text-white',
+              {/* Correct answer (wrong only) */}
+              {!isCorrect && correctAnswer && (
+                <div className="rounded-2xl border-2 border-gray-200 bg-gray-50 px-4 py-3">
+                  <span className="font-ui text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    Correct answer:
+                  </span>
+                  <p className="font-display text-base font-bold text-gray-900 mt-0.5">
+                    {correctAnswer}
+                  </p>
+                </div>
               )}
-            >
-              {isCorrect ? 'Continue →' : 'Got it →'}
-            </Button>
-          </div>
-        </motion.div>
+
+              {/* Explanation */}
+              {explanation && (
+                <p className="font-ui text-sm text-gray-600 leading-relaxed text-center">
+                  {explanation}
+                </p>
+              )}
+
+              {/* Action button */}
+              {isCorrect ? (
+                <Button variant="success" size="lg" fullWidth onClick={onContinue}>
+                  Continue →
+                </Button>
+              ) : (
+                <Button variant="amber" size="lg" fullWidth onClick={onContinue}>
+                  Try Again
+                </Button>
+              )}
+            </div>
+          </motion.div>
+        </>
       )}
     </AnimatePresence>
   );

@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils/cn';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'gold' | 'danger' | 'success' | 'outline';
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'gold' | 'danger' | 'success' | 'outline' | 'amber';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -21,31 +21,34 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 // ─── Variant config ───────────────────────────────────────────────────────────
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary:   'bg-primary text-white',
+  // primary = big green CTA (Duolingo-style action button)
+  primary:   'bg-cta text-white',
   secondary: 'bg-secondary text-white',
   gold:      'bg-gold text-white',
   success:   'bg-success text-white',
   danger:    'bg-error text-white',
   ghost:     'bg-transparent text-primary hover:bg-primary-lighter border-2 border-transparent hover:border-primary',
   outline:   'bg-white text-primary border-2 border-primary',
+  amber:     'bg-amber text-white',
 };
 
 const variantShadow: Record<ButtonVariant, string | null> = {
-  primary:   'var(--shadow-physical-primary)',
+  primary:   'var(--shadow-physical-cta)',
   secondary: 'var(--shadow-physical-secondary)',
   gold:      'var(--shadow-physical-gold)',
   success:   'var(--shadow-physical-success)',
   danger:    'var(--shadow-physical-error)',
   ghost:     null,
   outline:   null,
+  amber:     'var(--shadow-physical-amber)',
 };
 
 // ─── Size config ──────────────────────────────────────────────────────────────
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'text-sm px-4 py-2 rounded-md',
-  md: 'text-base px-6 py-3 rounded-xl',
-  lg: 'text-lg px-8 py-4 rounded-2xl font-semibold',
+  sm: 'text-sm px-4 py-2 rounded-full',
+  md: 'text-base px-6 py-3.5 rounded-full',
+  lg: 'text-lg px-8 py-4 rounded-full font-semibold',
 };
 
 // ─── Spinner ──────────────────────────────────────────────────────────────────
@@ -100,13 +103,15 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   return (
     <motion.button
       ref={ref}
-      // Framer Motion tap — only on non-disabled physical-shadow buttons
+      // Hover lift (physical buttons only)
+      whileHover={isDisabled || !hasPhysicalShadow ? undefined : { scale: 1.03 }}
+      // Tap press — pushes into physical shadow
       whileTap={
         isDisabled || !hasPhysicalShadow
           ? undefined
-          : { y: 4, boxShadow: 'none' }
+          : { y: 4, boxShadow: 'none', scale: 0.98 }
       }
-      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+      transition={{ type: 'spring', stiffness: 500, damping: 28 }}
       style={
         isDisabled || !hasPhysicalShadow
           ? undefined

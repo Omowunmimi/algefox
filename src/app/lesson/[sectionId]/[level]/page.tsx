@@ -7,6 +7,7 @@ import {
   selectCurrentQuestion,
 } from '@/stores/useLessonStore';
 import { useUserStore } from '@/stores/useUserStore';
+import { useStreakStore } from '@/stores/useStreakStore';
 import { useAudioStore } from '@/stores/useAudioStore';
 import { useLesson } from '@/hooks/useLesson';
 import { Button } from '@/components/ui';
@@ -94,6 +95,7 @@ export default function LessonPage() {
   const loseHeartUser = useUserStore((s) => s.loseHeart);
   const addXpUser = useUserStore((s) => s.addXp);
   const updateStats = useUserStore((s) => s.updateStats);
+  const completeSection = useUserStore((s) => s.completeSection);
 
   // Local UI state
   const [showQuitModal, setShowQuitModal] = useState(false);
@@ -105,46 +107,84 @@ export default function LessonPage() {
     const correct = answers.filter((a) => a.isCorrect).length;
     const total = questionQueue.length;
     const xpToAward = xpEarned > 0 ? xpEarned : correct * 10;
+    // Pass = 60% or more correct
+    const passed = total > 0 && correct / total >= 0.6;
 
-    // Award XP and update lesson stats in local store immediately
+    // ── 1. Update local stores immediately ───────────────────
     addXpUser(xpToAward);
     updateStats({
       lessonsCompleted: (userStats?.lessonsCompleted ?? 0) + 1,
       questionsAnswered: (userStats?.questionsAnswered ?? 0) + total,
       questionsCorrect: (userStats?.questionsCorrect ?? 0) + correct,
     });
+    // Only unlock next section on pass
+    if (passed) {
+      completeSection(sectionId, level);
+    }
 
-    // Best-effort: call complete-level API to update DB progress
-    const sessionId = useLessonStore.getState().sessionId;
-    const heartsLost = useLessonStore.getState().heartsLost;
+    // ── 2. Record streak (local) ──────────────────────────────
+    useStreakStore.getState().recordActivity(new Date().toISOString());
+
+    // ── 3. Sync everything to Supabase (best-effort) ─────────
     const startedAt = useLessonStore.getState().startedAt;
 
-    const markComplete = async () => {
+    const syncToDb = async () => {
       try {
-        if (sessionId) {
-          await fetch('/api/complete-level', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              sessionId,
-              sectionId,
-              level,
-              xpEarned: xpToAward,
-              heartsLost,
-              questionsTotal: total,
-              questionsCorrect: correct,
-              timeTakenSeconds: startedAt
-                ? Math.floor((Date.now() - startedAt) / 1000)
-                : 0,
-            }),
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const currentStats = useUserStore.getState().stats;
+        const newTotalXp = currentStats?.totalXp ?? xpToAward;
+        const newLevel = Math.floor(Math.sqrt(newTotalXp / 100)) + 1;
+        const newLessonsCompleted = currentStats?.lessonsCompleted ?? 1;
+        const newQuestionsAnswered = currentStats?.questionsAnswered ?? total;
+        const newQuestionsCorrect = currentStats?.questionsCorrect ?? correct;
+
+        const streakState = useStreakStore.getState();
+        const today = new Date().toISOString().split('T')[0];
+
+        await Promise.allSettled([
+          // Upsert XP + stats — creates row if it doesn't exist yet
+          supabase.from('user_stats').upsert({
+            user_id: user.id,
+            total_xp: newTotalXp,
+            level: newLevel,
+            lessons_completed: newLessonsCompleted,
+            questions_answered: newQuestionsAnswered,
+            questions_correct: newQuestionsCorrect,
+          }),
+
+          // Upsert streak
+          supabase.from('streaks').upsert({
+            user_id: user.id,
+            current_streak: streakState.currentStreak,
+            longest_streak: streakState.longestStreak,
+            last_activity_date: today,
+          }),
+        ]);
+
+        // Try to record lesson session (table may not exist yet — non-fatal)
+        try {
+          const timeTaken = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : 0;
+          await supabase.from('lesson_sessions').insert({
+            user_id: user.id,
+            section_id: sectionId,
+            level,
+            status: passed ? 'completed' : 'abandoned',
+            xp_earned: xpToAward,
+            questions_total: total,
+            questions_correct: correct,
+            time_taken_seconds: timeTaken,
           });
-        }
+        } catch { /* table not yet created */ }
+
       } catch {
-        // Non-critical — local store already updated
+        // Non-critical — local store already has correct values
       }
     };
 
-    void markComplete();
+    void syncToDb();
 
     const searchParams = new URLSearchParams({
       xp: String(xpToAward),
@@ -153,6 +193,7 @@ export default function LessonPage() {
       level: String(level),
       sectionId,
       sectionTitle,
+      passed: String(passed),
     });
 
     router.push(`/reward?${searchParams.toString()}`);
@@ -227,7 +268,7 @@ export default function LessonPage() {
       />
 
       {/* Main question area */}
-      <main className="flex-1 px-4 pt-20 pb-36 overflow-y-auto flex flex-col justify-center">
+      <main className="flex-1 px-4 pt-56 pb-36 overflow-y-auto flex flex-col justify-center">
         {(phase === 'loading' || lessonLoading) && <LoadingSpinner />}
 
         {phase === 'question' && currentQuestion && (

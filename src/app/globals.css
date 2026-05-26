@@ -13,12 +13,17 @@
   --font-ui:      'Nunito', system-ui, sans-serif;
   --font-sans:    'Nunito', system-ui, sans-serif;
 
-  /* --- PRIMARY (Champion Orange) --- */
-  --color-primary:         #F97316;
-  --color-primary-dark:    #EA580C;
-  --color-primary-darker:  #C2410C;
-  --color-primary-light:   #FED7AA;
-  --color-primary-lighter: #FFF7ED;
+  /* --- PRIMARY (Royal Purple) --- */
+  --color-primary:         #8A2BE2;
+  --color-primary-dark:    #7A1CAC;
+  --color-primary-darker:  #5B1483;
+  --color-primary-light:   #E9D5FF;
+  --color-primary-lighter: #F5F0FF;
+
+  /* --- CTA (Purple — matches primary, Duolingo-style) --- */
+  --color-cta:         #8A2BE2;
+  --color-cta-dark:    #7A1CAC;
+  --color-cta-darker:  #5B1483;
 
   /* --- SECONDARY (Royal Purple) --- */
   --color-secondary:         #7C3AED;
@@ -80,11 +85,24 @@
   --radius-xl:   20px;
   --radius-2xl:  24px;
   --radius-3xl:  28px;
+  --radius-full: 9999px;
+
+  /* --- SURFACE COLORS (Figma-inspired warm backgrounds) --- */
+  --color-cream:         #FAF7F0;
+  --color-cream-dark:    #F0E8D8;
+  --color-cream-border:  #E8DDD0;
+
+  /* --- AMBER/ORANGE (retry / warning state) --- */
+  --color-amber:         #F59E0B;
+  --color-amber-dark:    #D97706;
+  --color-amber-darker:  #B45309;
+  --shadow-physical-amber: 0 4px 0 0 #B45309;
 
   /* --- PHYSICAL SHADOWS (MathQuest signature) --- */
   --shadow-physical:           0 4px 0 0 #D1D5DB;
   --shadow-physical-sm:        0 2px 0 0 #D1D5DB;
-  --shadow-physical-primary:   0 4px 0 0 #C2410C;
+  --shadow-physical-primary:   0 4px 0 0 #5B1483;
+  --shadow-physical-cta:       0 4px 0 0 #5B1483;
   --shadow-physical-secondary: 0 4px 0 0 #5B21B6;
   --shadow-physical-gold:      0 4px 0 0 #D97706;
   --shadow-physical-success:   0 4px 0 0 #047857;
@@ -106,10 +124,11 @@
   --animate-spin-slow:  spin 3s linear infinite;
 
   /* --- GRADIENTS --- */
-  --bg-gradient-primary:   linear-gradient(135deg, #F97316 0%, #EA580C 100%);
+  --bg-gradient-primary:   linear-gradient(135deg, #8A2BE2 0%, #5B1483 100%);
   --bg-gradient-secondary: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);
   --bg-gradient-gold:      linear-gradient(135deg, #FBBF24 0%, #D97706 100%);
   --bg-gradient-success:   linear-gradient(135deg, #34D399 0%, #059669 100%);
+  --bg-gradient-cta:       linear-gradient(135deg, #8A2BE2 0%, #5B1483 100%);
 }
 
 /* ============================================================
@@ -141,6 +160,28 @@
   100% { background-position:  200% 0; }
 }
 
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-3deg); }
+  50%       { transform: rotate(3deg); }
+}
+
+@keyframes ray-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes pop-in {
+  0%   { transform: scale(0) rotate(-15deg); opacity: 0; }
+  70%  { transform: scale(1.15) rotate(5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes bounce-in {
+  0%   { transform: scale(0.8); opacity: 0; }
+  60%  { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
 /* ============================================================
    BASE STYLES
    ============================================================ */
@@ -167,16 +208,18 @@ body {
 }
 
 /* Remove default button styles for custom components */
-button {
-  cursor: pointer;
-  border: none;
-  background: none;
-  font-family: inherit;
+@layer base {
+  button {
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: inherit;
+  }
 }
 
 /* Smooth focus rings for accessibility */
 :focus-visible {
-  outline: 2.5px solid #F97316;
+  outline: 2.5px solid #8A2BE2;
   outline-offset: 2px;
   border-radius: 8px;
 }
@@ -205,10 +248,11 @@ button {
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
 
 /* Gradient backgrounds */
-.bg-gradient-primary   { background: linear-gradient(135deg, #F97316 0%, #EA580C 100%); }
+.bg-gradient-primary   { background: linear-gradient(135deg, #8A2BE2 0%, #5B1483 100%); }
 .bg-gradient-secondary { background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%); }
 .bg-gradient-gold      { background: linear-gradient(135deg, #FBBF24 0%, #D97706 100%); }
 .bg-gradient-success   { background: linear-gradient(135deg, #34D399 0%, #059669 100%); }
+.bg-gradient-cta       { background: linear-gradient(135deg, #8A2BE2 0%, #5B1483 100%); }
 
 /* Card shine overlay */
 .card-shine::after {
