@@ -61,9 +61,10 @@ function LessonTopBar({
 
   return (
     <header
-      className="fixed top-0 left-0 right-0 z-30 bg-white flex items-center gap-3 px-4"
+      className="fixed top-0 inset-x-0 z-30 bg-white"
       style={{ height: 56, boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}
     >
+      <div className="max-w-lg mx-auto h-full flex items-center gap-3 px-4">
       {/* Close button */}
       <button
         onClick={onClose}
@@ -104,6 +105,7 @@ function LessonTopBar({
           />
         ))}
         <span className="font-display text-sm font-bold text-gray-700 ml-1">{hearts}</span>
+      </div>
       </div>
     </header>
   );
@@ -201,65 +203,70 @@ function BottomBar({
   onSubmit: () => void;
   onHint: () => void;
 }) {
-  const canSubmit = pendingAnswer !== null;
+  // Empty string from FillBlank typing counts as "no answer yet"
+  const canSubmit = pendingAnswer !== null && pendingAnswer.trim() !== '';
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-30 bg-white flex items-center gap-3 px-4 py-3"
+      className="fixed bottom-0 inset-x-0 z-30 bg-white"
       style={{
         boxShadow: '0 -2px 16px rgba(0,0,0,0.08)',
         paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
       }}
     >
-      {canSubmit ? (
-        <>
-          <div className="flex-shrink-0 w-8 h-8">
-            <FoxyImage expression="encouraging" size={32} />
-          </div>
-          <p className="flex-1 font-display text-sm font-bold text-gray-700">Good thinking!</p>
-        </>
-      ) : (
-        <div className="flex-1" />
-      )}
-
-      {/* Hint */}
-      <div className="relative flex-shrink-0">
-        <button
-          onClick={onHint}
-          className="flex items-center gap-1.5 rounded-xl px-3 py-2.5 font-display font-bold text-sm"
-          style={{ background: '#FEF3C7', color: '#92400E' }}
-        >
-          <Lightbulb size={15} strokeWidth={2} />
-          <span>Hint</span>
-        </button>
-        {hintCount > 0 && (
-          <span
-            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center font-bold text-xs text-white"
-            style={{ background: '#8A2BE2' }}
-          >
-            {hintCount}
-          </span>
+      <div className="max-w-lg mx-auto flex items-center gap-3 px-4 py-3">
+        {/* Foxy nudge when answer selected */}
+        {canSubmit ? (
+          <>
+            <div className="flex-shrink-0 w-8 h-8">
+              <FoxyImage expression="encouraging" size={32} />
+            </div>
+            <p className="flex-1 font-display text-sm font-bold text-gray-700">Good thinking!</p>
+          </>
+        ) : (
+          <div className="flex-1" />
         )}
-      </div>
 
-      {/* Submit */}
-      <motion.button
-        onClick={onSubmit}
-        disabled={!canSubmit}
-        className="flex-shrink-0 rounded-2xl px-6 py-2.5 font-display font-bold text-sm text-white"
-        style={{
-          background: canSubmit ? '#8A2BE2' : '#D1D5DB',
-          boxShadow: canSubmit ? '0 4px 0 0 #5B1483' : 'none',
-        }}
-        whileTap={canSubmit ? { y: 4, boxShadow: 'none' } : undefined}
-      >
-        Check
-      </motion.button>
+        {/* Hint */}
+        <div className="relative flex-shrink-0">
+          <button
+            onClick={onHint}
+            className="flex items-center gap-1.5 rounded-xl px-3 py-2.5 font-display font-bold text-sm"
+            style={{ background: '#FEF3C7', color: '#92400E' }}
+          >
+            <Lightbulb size={15} strokeWidth={2} />
+            <span>Hint</span>
+          </button>
+          {hintCount > 0 && (
+            <span
+              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center font-bold text-xs text-white"
+              style={{ background: '#8A2BE2' }}
+            >
+              {hintCount}
+            </span>
+          )}
+        </div>
+
+        {/* Submit — wider button */}
+        <motion.button
+          onClick={onSubmit}
+          disabled={!canSubmit}
+          className="flex-shrink-0 rounded-2xl py-2.5 font-display font-bold text-sm text-white"
+          style={{
+            minWidth: 110,
+            background: canSubmit ? '#8A2BE2' : '#D1D5DB',
+            boxShadow: canSubmit ? '0 4px 0 0 #5B1483' : 'none',
+          }}
+          whileTap={canSubmit ? { y: 4, boxShadow: 'none' } : undefined}
+        >
+          Check
+        </motion.button>
+      </div>
     </div>
   );
 }
 
-/* ── Correct bottom bar ──────────────────────────────────────── */
+/* ── Correct bottom sheet ────────────────────────────────────── */
 function CorrectBar({ explanation, onContinue }: { explanation?: string; onContinue: () => void }) {
   return (
     <motion.div
@@ -267,40 +274,46 @@ function CorrectBar({ explanation, onContinue }: { explanation?: string; onConti
       animate={{ y: 0 }}
       exit={{ y: '100%' }}
       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-      className="fixed bottom-0 left-0 right-0 z-30 rounded-t-3xl px-5 py-4"
+      className="fixed bottom-0 inset-x-0 z-30"
       style={{
-        background: '#F0FDF4',
-        paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
-        boxShadow: '0 -4px 24px rgba(0,0,0,0.12)',
-        borderTop: '2px solid #BBF7D0',
+        background: 'white',
+        boxShadow: '0 -4px 32px rgba(0,0,0,0.14)',
+        paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
+        borderRadius: '24px 24px 0 0',
       }}
     >
-      <div className="flex items-start gap-3 mb-3">
-        <div className="flex-shrink-0">
-          <FoxyImage expression="celebrating" size={44} />
+      <div className="max-w-lg mx-auto px-5 pt-4 pb-1">
+        {/* Foxy centered */}
+        <div className="flex justify-center mb-2">
+          <div
+            className="w-20 h-20 rounded-full flex items-center justify-center"
+            style={{ background: '#F0FDF4' }}
+          >
+            <FoxyImage expression="celebrating" size={64} />
+          </div>
         </div>
-        <div className="flex-1">
-          <p className="font-display text-lg font-bold" style={{ color: '#15803D' }}>That&apos;s correct!</p>
-          {explanation ? (
-            <p className="font-ui text-sm mt-0.5 leading-snug" style={{ color: '#16A34A' }}>{explanation}</p>
-          ) : (
-            <p className="font-ui text-sm mt-0.5" style={{ color: '#16A34A' }}>Well done, keep going!</p>
-          )}
-        </div>
+
+        <p className="font-display text-2xl font-bold text-center" style={{ color: '#15803D' }}>
+          That&apos;s correct!
+        </p>
+        <p className="font-ui text-sm text-center mt-1 mb-4" style={{ color: '#16A34A' }}>
+          {explanation ?? 'Well done, keep going!'}
+        </p>
+
+        <motion.button
+          onClick={onContinue}
+          className="w-full rounded-3xl py-4 font-display font-bold text-white text-base"
+          style={{ background: '#16A34A', boxShadow: '0 5px 0 0 #166534' }}
+          whileTap={{ y: 5, boxShadow: 'none' }}
+        >
+          Next
+        </motion.button>
       </div>
-      <motion.button
-        onClick={onContinue}
-        className="w-full rounded-2xl py-3 font-display font-bold text-white text-sm"
-        style={{ background: '#16A34A', boxShadow: '0 4px 0 0 #166534' }}
-        whileTap={{ y: 4, boxShadow: 'none' }}
-      >
-        Next
-      </motion.button>
     </motion.div>
   );
 }
 
-/* ── Wrong bottom sheet ──────────────────────────────────────── */
+/* ── Wrong bottom sheet ─────────────── matches image exactly ── */
 function WrongSheet({
   correctAnswer,
   explanation,
@@ -316,48 +329,60 @@ function WrongSheet({
       animate={{ y: 0 }}
       exit={{ y: '100%' }}
       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-      className="fixed bottom-0 left-0 right-0 z-30 rounded-t-3xl px-5 py-4"
+      className="fixed bottom-0 inset-x-0 z-30"
       style={{
         background: 'white',
+        boxShadow: '0 -4px 32px rgba(0,0,0,0.14)',
         paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
-        boxShadow: '0 -4px 24px rgba(0,0,0,0.12)',
-        borderTop: '2px solid #FDE68A',
+        borderRadius: '24px 24px 0 0',
       }}
     >
-      <div className="flex items-start gap-3 mb-3">
-        <div className="flex-shrink-0">
-          <FoxyImage expression="sad" size={44} />
+      <div className="max-w-lg mx-auto px-5 pt-4 pb-1">
+        {/* Foxy centered */}
+        <div className="flex justify-center mb-3">
+          <div
+            className="w-24 h-24 rounded-full flex items-center justify-center"
+            style={{ background: '#FFF7ED' }}
+          >
+            <FoxyImage expression="sad" size={76} />
+          </div>
         </div>
-        <div>
-          <p className="font-display text-lg font-bold text-gray-900">Almost there!</p>
-          <p className="font-ui text-sm text-gray-500 mt-0.5">Here&apos;s the trick:</p>
-        </div>
-      </div>
 
-      {correctAnswer && (
-        <div
-          className="rounded-2xl px-4 py-3 mb-3"
-          style={{ background: '#F9FAFB', border: '1px solid #E5E7EB' }}
-        >
-          <p className="font-ui text-xs font-bold uppercase tracking-wider mb-1" style={{ color: '#9CA3AF' }}>
-            Correct Answer
+        <p className="font-display text-2xl font-bold text-center text-gray-900">Almost There!</p>
+        <p className="font-ui text-sm text-center mt-1 mb-4" style={{ color: '#6B7280' }}>
+          No wahala &mdash; here&apos;s the trick:
+        </p>
+
+        {correctAnswer && (
+          <div
+            className="rounded-2xl px-4 py-3 mb-3"
+            style={{ background: '#F9FAFB', border: '1px solid #E5E7EB' }}
+          >
+            <p
+              className="font-ui text-xs font-bold uppercase tracking-wider mb-1"
+              style={{ color: '#9CA3AF' }}
+            >
+              Correct Answer:
+            </p>
+            <p className="font-display text-xl font-bold text-gray-900">{correctAnswer}</p>
+          </div>
+        )}
+
+        {explanation && (
+          <p className="font-ui text-sm text-center text-gray-600 mb-4 leading-relaxed px-2">
+            {explanation}
           </p>
-          <p className="font-display text-base font-bold text-gray-900">{correctAnswer}</p>
-        </div>
-      )}
+        )}
 
-      {explanation && (
-        <p className="font-ui text-sm text-gray-600 mb-3 leading-relaxed">{explanation}</p>
-      )}
-
-      <motion.button
-        onClick={onContinue}
-        className="w-full rounded-2xl py-3 font-display font-bold text-white text-sm"
-        style={{ background: '#D97706', boxShadow: '0 4px 0 0 #92400E' }}
-        whileTap={{ y: 4, boxShadow: 'none' }}
-      >
-        Got it, continue
-      </motion.button>
+        <motion.button
+          onClick={onContinue}
+          className="w-full rounded-3xl py-4 font-display font-bold text-white text-base"
+          style={{ background: '#D97706', boxShadow: '0 5px 0 0 #92400E' }}
+          whileTap={{ y: 5, boxShadow: 'none' }}
+        >
+          Got it
+        </motion.button>
+      </div>
     </motion.div>
   );
 }
@@ -662,11 +687,12 @@ export default function LessonPage() {
         onClose={() => setShowQuitModal(true)}
       />
 
-      {/* Main scrollable area */}
+      {/* Main scrollable area — constrained to max-w-lg */}
       <main
         className="flex-1 pt-14 overflow-y-auto"
         style={{ paddingBottom: isInFeedback ? '12px' : '120px' }}
       >
+        <div className="max-w-lg mx-auto">
         {(phase === 'loading' || lessonLoading) && <LoadingSpinner />}
 
         {showQuestion && (
@@ -713,6 +739,7 @@ export default function LessonPage() {
             <HeartsEmptyScreen onQuit={handleQuit} />
           </div>
         )}
+        </div>
       </main>
 
       {/* Bottom bar */}
