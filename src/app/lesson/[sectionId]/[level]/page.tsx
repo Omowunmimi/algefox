@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback, ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { InlineMath, BlockMath } from 'react-katex';
 import Image from 'next/image';
+import { X, Heart, CheckCircle, XCircle, Zap, BookOpen, Star, Lightbulb } from 'lucide-react';
 import {
   useLessonStore,
   selectCurrentQuestion,
@@ -14,8 +15,6 @@ import { useStreakStore } from '@/stores/useStreakStore';
 import { useAudioStore } from '@/stores/useAudioStore';
 import { useLesson } from '@/hooks/useLesson';
 import { QuestionRenderer } from '@/components/questions/QuestionRenderer';
-import { LessonHeader } from '@/components/lesson/LessonHeader';
-import { FeedbackOverlay } from '@/components/lesson/FeedbackOverlay';
 import { QuitConfirmModal } from '@/components/lesson/QuitConfirmModal';
 import { FoxyImage } from '@/components/mascot/FoxyImage';
 import { createClient } from '@/lib/supabase/client';
@@ -37,83 +36,145 @@ function renderMathText(text: string): ReactNode {
   );
 }
 
-/** Extract the LaTeX string from the first $...$ block in text, if any */
 function extractDisplayMath(text: string): string | null {
-  // Collect all $...$ segments and join them to form a display expression
   const matches = [...text.matchAll(/\$([^$]+)\$/g)];
   if (matches.length === 0) return null;
   return matches.map((m) => m[1]).join(' = ');
 }
 
-/* ── Mascot + question card ──────────────────────────────────── */
+/* ── Lesson Header ───────────────────────────────────────────── */
 
-function QuestionCard({
-  questionText,
-  xpGain,
+function LessonTopBar({
+  current,
+  total,
+  hearts,
+  maxHearts,
+  onClose,
 }: {
-  questionText: string;
-  xpGain: number;
+  current: number;
+  total: number;
+  hearts: number;
+  maxHearts: number;
+  onClose: () => void;
 }) {
+  const progress = total > 0 ? Math.min((current - 1) / total, 1) : 0;
+
+  return (
+    <header
+      className="fixed top-0 left-0 right-0 z-30 bg-white flex items-center gap-3 px-4"
+      style={{ height: 56, boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}
+    >
+      {/* Close button */}
+      <button
+        onClick={onClose}
+        className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center border border-gray-200"
+        aria-label="Quit lesson"
+      >
+        <X size={18} strokeWidth={2} className="text-gray-500" />
+      </button>
+
+      {/* Progress bar — striped texture */}
+      <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: '#E5E7EB' }}>
+        <motion.div
+          className="h-full rounded-full"
+          style={{
+            background: `repeating-linear-gradient(
+              90deg,
+              #8A2BE2 0px,
+              #8A2BE2 18px,
+              #7B27CC 18px,
+              #7B27CC 24px
+            )`,
+          }}
+          initial={{ width: 0 }}
+          animate={{ width: `${progress * 100}%` }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+        />
+      </div>
+
+      {/* Hearts */}
+      <div className="flex-shrink-0 flex items-center gap-1">
+        {Array.from({ length: maxHearts }).map((_, i) => (
+          <Heart
+            key={i}
+            size={16}
+            strokeWidth={1.5}
+            fill={i < hearts ? '#FB7185' : 'none'}
+            stroke={i < hearts ? '#E11D48' : '#D1D5DB'}
+          />
+        ))}
+        <span className="font-display text-sm font-bold text-gray-700 ml-1">{hearts}</span>
+      </div>
+    </header>
+  );
+}
+
+/* ── Mascot + question bubble ────────────────────────────────── */
+
+function QuestionBubble({ questionText, xpGain }: { questionText: string; xpGain: number }) {
   const displayMath = extractDisplayMath(questionText);
-  // Non-math part (everything before the first $)
   const instrText = questionText.includes('$')
     ? questionText.split('$')[0].trim().replace(/\?$/, '').trim()
     : questionText;
 
   return (
-    <div
-      className="mx-4 rounded-3xl overflow-hidden"
-      style={{ background: '#FFFFFF', boxShadow: '0 2px 16px rgba(0,0,0,0.08)' }}
-    >
-      {/* Mascot + speech bubble row */}
-      <div className="flex items-center gap-3 p-4 pb-2">
-        {/* Foxy — large */}
-        <div className="flex-shrink-0">
+    <div className="mx-4">
+      <div className="flex items-start gap-3">
+        {/* Foxy head */}
+        <div
+          className="flex-shrink-0 w-14 h-14 rounded-full overflow-hidden border-2 border-white"
+          style={{ boxShadow: '0 2px 8px rgba(138,43,226,0.2)' }}
+        >
           <Image
             src="/mascot/foxy-excited.png"
-            alt="Foxy the fox"
-            width={100}
-            height={100}
-            className="object-contain"
+            alt="Foxy"
+            width={56}
+            height={56}
+            className="object-contain w-full h-full"
             priority
           />
         </div>
 
         {/* Speech bubble */}
-        <div className="relative flex-1">
-          {/* Tail left */}
+        <div className="flex-1 relative">
+          {/* Tail */}
           <span
             aria-hidden="true"
-            className="absolute -left-3 top-1/2 -translate-y-1/2"
+            className="absolute -left-2.5 top-4"
             style={{
-              width: 0, height: 0,
-              borderTop: '8px solid transparent',
-              borderBottom: '8px solid transparent',
-              borderRight: '10px solid #F3F4F6',
+              width: 0,
+              height: 0,
+              borderTop: '7px solid transparent',
+              borderBottom: '7px solid transparent',
+              borderRight: '10px solid white',
+              filter: 'drop-shadow(-2px 0px 1px rgba(0,0,0,0.04))',
             }}
           />
-          <div className="rounded-2xl px-4 py-3" style={{ background: '#F3F4F6' }}>
+          <div
+            className="bg-white rounded-2xl px-4 py-3"
+            style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}
+          >
             <p className="font-display text-base font-bold text-gray-900 leading-snug">
-              {instrText || 'Let\'s solve this together!'}
+              {instrText || "Let's solve this together!"}
             </p>
           </div>
         </div>
 
-        {/* +XP badge */}
+        {/* XP badge */}
         <motion.div
-          className="flex-shrink-0 flex items-center gap-1 rounded-xl px-3 py-1.5"
+          className="flex-shrink-0 flex items-center gap-1 rounded-xl px-2.5 py-1.5"
           style={{ background: '#FEF9C3', border: '1.5px solid #FDE047' }}
           animate={{ scale: [1, 1.06, 1] }}
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
         >
-          <span className="text-base">⭐</span>
-          <span className="font-display text-sm font-bold text-yellow-700">+{xpGain}</span>
+          <Zap size={12} fill="#FCD34D" stroke="#D97706" strokeWidth={0.5} />
+          <span className="font-display text-xs font-bold text-yellow-700">+{xpGain}</span>
         </motion.div>
       </div>
 
-      {/* Large math display (if question has LaTeX) */}
+      {/* Large math display */}
       {displayMath && (
-        <div className="px-4 py-4 text-center">
+        <div className="mt-4 text-center">
           <div
             className="inline-flex items-center gap-3 px-6 py-4 rounded-2xl text-3xl font-bold"
             style={{ background: '#F5F0FF' }}
@@ -123,9 +184,8 @@ function QuestionCard({
         </div>
       )}
 
-      {/* No-math: show full question text big */}
       {!displayMath && (
-        <div className="px-4 pb-4 text-center">
+        <div className="mt-3 text-center">
           <p className="font-display text-xl font-bold text-gray-900">
             {renderMathText(questionText)}
           </p>
@@ -135,7 +195,7 @@ function QuestionCard({
   );
 }
 
-/* ── Bottom bar ──────────────────────────────────────────────── */
+/* ── Bottom bar (no answer / answer selected) ─────────────────── */
 
 function BottomBar({
   pendingAnswer,
@@ -153,27 +213,30 @@ function BottomBar({
   return (
     <div
       className="fixed bottom-0 left-0 right-0 z-30 bg-white flex items-center gap-3 px-4 py-3"
-      style={{ boxShadow: '0 -4px 20px rgba(0,0,0,0.08)', paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
+      style={{
+        boxShadow: '0 -2px 16px rgba(0,0,0,0.08)',
+        paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
+      }}
     >
-      {/* Encouraging Foxy (small) */}
-      <div className="flex-shrink-0">
-        <FoxyImage expression="happy" size={56} />
-      </div>
+      {canSubmit ? (
+        <>
+          <div className="flex-shrink-0 w-8 h-8">
+            <FoxyImage expression="encouraging" size={32} />
+          </div>
+          <p className="flex-1 font-display text-sm font-bold text-gray-700">Good thinking!</p>
+        </>
+      ) : (
+        <div className="flex-1" />
+      )}
 
-      {/* Encouragement text */}
-      <div className="flex-1 min-w-0">
-        <p className="font-display text-sm font-bold text-gray-900 leading-tight">Great thinking!</p>
-        <p className="font-ui text-xs text-gray-500 mt-0.5">You&apos;re doing awesome!</p>
-      </div>
-
-      {/* Hint button */}
+      {/* Hint */}
       <div className="relative flex-shrink-0">
         <button
           onClick={onHint}
           className="flex items-center gap-1.5 rounded-xl px-3 py-2.5 font-display font-bold text-sm"
           style={{ background: '#FEF3C7', color: '#92400E' }}
         >
-          <span>💡</span>
+          <Lightbulb size={15} strokeWidth={2} />
           <span>Hint</span>
         </button>
         {hintCount > 0 && (
@@ -186,53 +249,220 @@ function BottomBar({
         )}
       </div>
 
-      {/* Submit Answer button */}
+      {/* Submit */}
       <motion.button
         onClick={onSubmit}
         disabled={!canSubmit}
-        className="flex-shrink-0 flex items-center gap-2 rounded-xl px-5 py-2.5 font-display font-bold text-sm text-white transition-opacity"
+        className="flex-shrink-0 rounded-2xl px-6 py-2.5 font-display font-bold text-sm text-white"
         style={{
-          background: canSubmit ? 'linear-gradient(135deg, #8A2BE2, #5B1483)' : '#D1D5DB',
-          boxShadow: canSubmit ? '0 4px 0 0 #3B0764' : 'none',
-          opacity: canSubmit ? 1 : 0.7,
+          background: canSubmit ? '#8A2BE2' : '#D1D5DB',
+          boxShadow: canSubmit ? '0 4px 0 0 #5B1483' : 'none',
         }}
         whileTap={canSubmit ? { y: 4, boxShadow: 'none' } : undefined}
       >
-        <span>Submit Answer</span>
-        <span className="text-base">›</span>
+        Check
       </motion.button>
     </div>
   );
 }
 
-/* ── Loading ─────────────────────────────────────────────────── */
+/* ── Correct bottom bar ──────────────────────────────────────── */
+function CorrectBar({ onContinue }: { onContinue: () => void }) {
+  return (
+    <motion.div
+      initial={{ y: 80, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 80, opacity: 0 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+      className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-between px-4 py-4"
+      style={{
+        background: '#DCFCE7',
+        paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+        boxShadow: '0 -2px 16px rgba(34,197,94,0.15)',
+      }}
+    >
+      <div className="flex items-center gap-2">
+        <CheckCircle size={24} style={{ color: '#16A34A' }} strokeWidth={2} />
+        <div>
+          <p className="font-display text-base font-bold" style={{ color: '#15803D' }}>Correct!</p>
+          <p className="font-ui text-xs" style={{ color: '#16A34A' }}>Keep it up</p>
+        </div>
+      </div>
+      <motion.button
+        onClick={onContinue}
+        className="rounded-2xl px-6 py-2.5 font-display font-bold text-white text-sm"
+        style={{ background: '#16A34A', boxShadow: '0 4px 0 0 #166534' }}
+        whileTap={{ y: 4, boxShadow: 'none' }}
+      >
+        Next
+      </motion.button>
+    </motion.div>
+  );
+}
 
+/* ── Wrong bottom sheet ──────────────────────────────────────── */
+function WrongSheet({ onContinue }: { onContinue: () => void }) {
+  return (
+    <motion.div
+      initial={{ y: '100%' }}
+      animate={{ y: 0 }}
+      exit={{ y: '100%' }}
+      transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+      className="fixed bottom-0 left-0 right-0 z-30 rounded-t-3xl px-5 py-5"
+      style={{
+        background: '#FEF3C7',
+        paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
+        boxShadow: '0 -4px 24px rgba(0,0,0,0.12)',
+      }}
+    >
+      <div className="flex items-start gap-3 mb-4">
+        <XCircle size={26} style={{ color: '#D97706' }} strokeWidth={2} />
+        <div>
+          <p className="font-display text-lg font-bold" style={{ color: '#92400E' }}>Oops! Try again</p>
+          <p className="font-ui text-sm" style={{ color: '#B45309' }}>Review your thinking and try once more</p>
+        </div>
+      </div>
+      <motion.button
+        onClick={onContinue}
+        className="w-full rounded-2xl py-3 font-display font-bold text-white text-sm"
+        style={{ background: '#D97706', boxShadow: '0 4px 0 0 #92400E' }}
+        whileTap={{ y: 4, boxShadow: 'none' }}
+      >
+        Got it
+      </motion.button>
+    </motion.div>
+  );
+}
+
+/* ── Lesson complete overlay ─────────────────────────────────── */
+function LessonCompleteOverlay({
+  correct,
+  total,
+  xpEarned,
+  onClaim,
+}: {
+  correct: number;
+  total: number;
+  xpEarned: number;
+  onClaim: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ y: '100%' }}
+      animate={{ y: 0 }}
+      transition={{ type: 'spring', stiffness: 260, damping: 28 }}
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6 text-center"
+      style={{ background: 'linear-gradient(160deg, #3B0764 0%, #1E0047 100%)' }}
+    >
+      {/* Stars */}
+      <div className="flex gap-3 mb-6">
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={i}
+            initial={{ scale: 0, rotate: -20 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ delay: 0.2 + i * 0.12, type: 'spring', stiffness: 400, damping: 18 }}
+          >
+            <Star
+              size={44}
+              fill="#FCD34D"
+              stroke="#D97706"
+              strokeWidth={0.5}
+            />
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Foxy celebrating */}
+      <motion.div
+        initial={{ scale: 0.6, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.5, type: 'spring', stiffness: 300, damping: 20 }}
+        className="mb-4"
+      >
+        <Image src="/mascot/foxy-celebrating.png" alt="Foxy celebrating" width={120} height={120} className="object-contain" />
+      </motion.div>
+
+      <motion.h1
+        className="font-display text-3xl font-bold text-white mb-2"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+      >
+        Lesson Complete!
+      </motion.h1>
+
+      <motion.div
+        className="flex flex-col gap-2 mt-4 w-full max-w-xs"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.75 }}
+      >
+        <div
+          className="flex items-center justify-between rounded-2xl px-4 py-3"
+          style={{ background: 'rgba(255,255,255,0.1)' }}
+        >
+          <div className="flex items-center gap-2">
+            <BookOpen size={18} color="white" strokeWidth={2} />
+            <span className="font-ui text-sm text-white/80">Score</span>
+          </div>
+          <span className="font-display text-base font-bold text-white">{correct} / {total} correct</span>
+        </div>
+
+        <div
+          className="flex items-center justify-between rounded-2xl px-4 py-3"
+          style={{ background: 'rgba(255,255,255,0.1)' }}
+        >
+          <div className="flex items-center gap-2">
+            <Zap size={18} fill="#FCD34D" stroke="#D97706" strokeWidth={0.5} />
+            <span className="font-ui text-sm text-white/80">XP Earned</span>
+          </div>
+          <span className="font-display text-base font-bold text-white">+{xpEarned} XP</span>
+        </div>
+      </motion.div>
+
+      <motion.button
+        onClick={onClaim}
+        className="mt-8 w-full max-w-xs rounded-3xl py-4 font-display font-bold text-white text-lg"
+        style={{ background: '#8A2BE2', boxShadow: '0 6px 0 0 #5B1483' }}
+        whileTap={{ y: 6, boxShadow: 'none' }}
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.9 }}
+      >
+        Claim Rewards
+      </motion.button>
+    </motion.div>
+  );
+}
+
+/* ── Loading ─────────────────────────────────────────────────── */
 function LoadingSpinner() {
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-20">
-      <div className="w-12 h-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
-      <p className="font-ui text-gray-500 text-sm">Loading your lesson…</p>
+      <div className="w-12 h-12 rounded-full border-4 border-purple-200 border-t-purple-600 animate-spin" />
+      <p className="font-ui text-gray-500 text-sm">Loading your lesson...</p>
     </div>
   );
 }
 
 /* ── Hearts empty ────────────────────────────────────────────── */
-
 function HeartsEmptyScreen({ onQuit }: { onQuit: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center gap-6 py-12 text-center px-4">
       <FoxyImage expression="sad" size={110} />
       <div>
         <h2 className="font-display text-2xl font-bold text-gray-900 mb-2">Out of hearts!</h2>
-        <p className="font-ui text-gray-500 text-sm">Hearts refill every 30 minutes.<br />Come back soon!</p>
+        <p className="font-ui text-gray-500 text-sm">Hearts refill every 30 minutes. Come back soon!</p>
       </div>
-      <button
+      <motion.button
         onClick={onQuit}
         className="w-full max-w-xs rounded-2xl py-4 font-display font-bold text-white text-lg"
-        style={{ background: 'linear-gradient(135deg, #8A2BE2, #5B1483)', boxShadow: '0 4px 0 0 #3B0764' }}
+        style={{ background: '#8A2BE2', boxShadow: '0 4px 0 0 #5B1483' }}
+        whileTap={{ y: 4, boxShadow: 'none' }}
       >
         Go Home
-      </button>
+      </motion.button>
     </div>
   );
 }
@@ -270,15 +500,13 @@ export default function LessonPage() {
   const updateStats      = useUserStore((s) => s.updateStats);
   const completeSection  = useUserStore((s) => s.completeSection);
 
-  // Pending (selected but not yet submitted) answer
   const [pendingAnswer, setPendingAnswer] = useState<string | null>(null);
-  // The answer that was last submitted (for correct/wrong visual after submit)
   const [submittedAnswer, setSubmittedAnswer] = useState<string | null>(null);
   const [showQuitModal, setShowQuitModal] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [hintIndex, setHintIndex] = useState(0);
+  const [showCompleteOverlay, setShowCompleteOverlay] = useState(false);
 
-  // Clear pending/submitted answers whenever the question changes
   useEffect(() => {
     setPendingAnswer(null);
     setSubmittedAnswer(null);
@@ -286,7 +514,7 @@ export default function LessonPage() {
     setHintIndex(0);
   }, [currentIndex]);
 
-  /* ── Lesson complete → reward ───────────────────────────── */
+  /* ── Lesson complete ─────────────────────────────────────── */
   useEffect(() => {
     if (phase !== 'lesson_complete') return;
 
@@ -333,13 +561,10 @@ export default function LessonPage() {
     };
     void syncToDb();
 
-    const sp = new URLSearchParams({ xp: String(xpToAward), correct: String(correct),
-      total: String(total), level: String(level), sectionId, sectionTitle, passed: String(passed) });
-    router.push(`/reward?${sp.toString()}`);
+    setShowCompleteOverlay(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  /* ── Submit the pending answer ──────────────────────────── */
   const handleSubmit = useCallback(() => {
     if (!pendingAnswer || !currentQuestion) return;
 
@@ -362,7 +587,6 @@ export default function LessonPage() {
     }
   }, [pendingAnswer, currentQuestion, submitAnswer, loseHeart, loseHeartUser, addXp, setPhase, userStats?.hearts]);
 
-  /* ── Continue (Next →) ──────────────────────────────────── */
   const handleContinue = useCallback(() => {
     setPendingAnswer(null);
     setSubmittedAnswer(null);
@@ -382,39 +606,48 @@ export default function LessonPage() {
     setShowHint(true);
   }, [currentQuestion]);
 
-  /* ── Render ─────────────────────────────────────────────── */
+  const handleClaimRewards = useCallback(() => {
+    const correct = answers.filter((a) => a.isCorrect).length;
+    const total   = questionQueue.length;
+    const xpToAward = xpEarned > 0 ? xpEarned : correct * 10;
+    const passed = total > 0 && correct / total >= 0.6;
+    const sp = new URLSearchParams({
+      xp: String(xpToAward), correct: String(correct),
+      total: String(total), level: String(level), sectionId, sectionTitle, passed: String(passed),
+    });
+    resetLesson();
+    router.push(`/reward?${sp.toString()}`);
+  }, [answers, questionQueue, xpEarned, level, sectionId, sectionTitle, resetLesson, router]);
+
   const isInFeedback = phase === 'feedback_correct' || phase === 'feedback_incorrect';
   const showQuestion = phase === 'question' && !!currentQuestion;
   const hintCount    = (currentQuestion?.hints?.length ?? 0) - hintIndex;
+  const maxHearts    = userStats?.maxHearts ?? 5;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#f4f1fb' }}>
-      <LessonHeader
+    <div className="min-h-screen flex flex-col" style={{ background: '#F8F7FF' }}>
+      <LessonTopBar
         current={currentIndex + 1}
         total={queueLength}
         hearts={userStats?.hearts ?? 5}
-        maxHearts={userStats?.maxHearts ?? 5}
-        sectionTitle={sectionTitle}
+        maxHearts={maxHearts}
         onClose={() => setShowQuitModal(true)}
       />
 
-      {/* Main scrollable area — pt-16 for the single-row fixed header */}
+      {/* Main scrollable area */}
       <main
-        className="flex-1 pt-16 overflow-y-auto"
+        className="flex-1 pt-14 overflow-y-auto"
         style={{ paddingBottom: isInFeedback ? '12px' : '120px' }}
       >
         {(phase === 'loading' || lessonLoading) && <LoadingSpinner />}
 
         {showQuestion && (
-          <div className="flex flex-col gap-4 py-4">
-            {/* Mascot + question bubble + XP badge */}
-            <QuestionCard
-              questionText={currentQuestion.questionText}
-              xpGain={10}
-            />
+          <div className="flex flex-col gap-4 py-5">
+            {/* Foxy + question bubble */}
+            <QuestionBubble questionText={currentQuestion.questionText} xpGain={10} />
 
-            {/* "Select the correct answer" label */}
-            <p className="font-display text-sm font-bold text-gray-500 uppercase tracking-widest px-5">
+            {/* Instruction label */}
+            <p className="font-display text-xs font-bold text-gray-400 uppercase tracking-widest px-5">
               Select the correct answer
             </p>
 
@@ -438,7 +671,7 @@ export default function LessonPage() {
                 className="mx-4 rounded-2xl px-4 py-3 flex items-start gap-2"
                 style={{ background: '#FEF3C7', border: '1.5px solid #FDE047' }}
               >
-                <span className="text-lg">💡</span>
+                <Lightbulb size={16} style={{ color: '#D97706' }} strokeWidth={2} className="flex-shrink-0 mt-0.5" />
                 <p className="font-ui text-sm text-amber-800">
                   {currentQuestion.hints[hintIndex - 1]}
                 </p>
@@ -454,7 +687,7 @@ export default function LessonPage() {
         )}
       </main>
 
-      {/* Bottom bar — shown during question phase */}
+      {/* Bottom bar */}
       {showQuestion && !isInFeedback && (
         <BottomBar
           pendingAnswer={pendingAnswer}
@@ -464,14 +697,27 @@ export default function LessonPage() {
         />
       )}
 
-      {/* Feedback overlay */}
-      <FeedbackOverlay
-        isVisible={isInFeedback}
-        isCorrect={phase === 'feedback_correct'}
-        explanation={currentQuestion?.explanation ?? ''}
-        correctAnswer={currentQuestion?.correctAnswer}
-        onContinue={handleContinue}
-      />
+      {/* Feedback bars */}
+      <AnimatePresence>
+        {phase === 'feedback_correct' && (
+          <CorrectBar key="correct" onContinue={handleContinue} />
+        )}
+        {phase === 'feedback_incorrect' && (
+          <WrongSheet key="wrong" onContinue={handleContinue} />
+        )}
+      </AnimatePresence>
+
+      {/* Lesson complete overlay */}
+      <AnimatePresence>
+        {showCompleteOverlay && (
+          <LessonCompleteOverlay
+            correct={answers.filter((a) => a.isCorrect).length}
+            total={questionQueue.length}
+            xpEarned={xpEarned > 0 ? xpEarned : answers.filter((a) => a.isCorrect).length * 10}
+            onClaim={handleClaimRewards}
+          />
+        )}
+      </AnimatePresence>
 
       <QuitConfirmModal
         isOpen={showQuitModal}

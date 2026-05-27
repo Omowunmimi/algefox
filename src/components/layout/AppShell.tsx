@@ -10,10 +10,9 @@ interface AppShellProps {
 
 export default function AppShell({ children }: AppShellProps) {
   return (
-    <div className="flex flex-col min-h-screen" style={{ background: '#f4f1fb' }}>
+    <div className="flex flex-col min-h-screen" style={{ background: '#F8F7FF' }}>
       <AppHeader />
-      {/* Content: full-width on mobile, 120px inset on desktop */}
-      <main className="flex-1 pb-20 overflow-y-auto w-full mx-auto px-0 lg:px-[120px] max-w-screen-xl">
+      <main className="flex-1 pb-20 overflow-y-auto w-full max-w-lg mx-auto">
         {children}
       </main>
       <BottomNav />
