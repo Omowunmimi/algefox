@@ -92,16 +92,11 @@ export function TrueFalse({
 
   return (
     <motion.div
-      className="flex flex-col gap-6 w-full"
+      className="flex flex-col gap-4 w-full"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: 'spring', stiffness: 400, damping: 28 }}
     >
-      {/* Statement */}
-      <p className="font-display text-xl font-semibold text-gray-900 leading-snug px-1 text-center">
-        {renderMathText(question.questionText)}
-      </p>
-
       {/* True / False buttons */}
       <div className="flex gap-4">
         {/* TRUE */}

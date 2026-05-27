@@ -161,7 +161,10 @@ function DailyChallengeCard({ onPress }: { onPress: () => void }) {
       <motion.button
         onClick={onPress}
         className="w-full rounded-3xl p-4 text-left flex items-center gap-4"
-        style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)' }}
+        style={{
+          background: 'linear-gradient(135deg, #0F0A1E 0%, #1E0A3C 50%, #2D0A4E 100%)',
+          boxShadow: '0 4px 0 0 #080412',
+        }}
         whileTap={{ y: 4, boxShadow: 'none' }}
       >
         {/* Target icon */}
@@ -189,10 +192,10 @@ function DailyChallengeCard({ onPress }: { onPress: () => void }) {
 
 /* ── Progress section ──────────────────────────────────────── */
 const SECTION_CONFIG: Record<string, { color: string; bg: string }> = {
-  'fractions-intro':      { color: '#EA580C', bg: '#FFF7ED' },
-  'fractions-operations': { color: '#EA580C', bg: '#FFF7ED' },
-  'algebra-intro':        { color: '#8A2BE2', bg: '#F5F0FF' },
-  'algebra-expressions':  { color: '#8A2BE2', bg: '#F5F0FF' },
+  'fractions-intro':      { color: '#2563EB', bg: '#EFF6FF' },
+  'fractions-operations': { color: '#059669', bg: '#ECFDF5' },
+  'algebra-intro':        { color: '#7C3AED', bg: '#F5F3FF' },
+  'algebra-expressions':  { color: '#DB2777', bg: '#FDF2F8' },
 };
 
 function ProgressSection({ sections }: { sections: SectionProgress[] }) {

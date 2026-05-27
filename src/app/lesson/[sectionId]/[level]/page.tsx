@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { InlineMath, BlockMath } from 'react-katex';
 import Image from 'next/image';
-import { X, Heart, CheckCircle, XCircle, Zap, BookOpen, Star, Lightbulb } from 'lucide-react';
+import { X, Heart, CheckCircle, Zap, BookOpen, Star, Lightbulb } from 'lucide-react';
 import {
   useLessonStore,
   selectCurrentQuestion,
@@ -184,13 +184,6 @@ function QuestionBubble({ questionText, xpGain }: { questionText: string; xpGain
         </div>
       )}
 
-      {!displayMath && (
-        <div className="mt-3 text-center">
-          <p className="font-display text-xl font-bold text-gray-900">
-            {renderMathText(questionText)}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
@@ -267,30 +260,37 @@ function BottomBar({
 }
 
 /* ── Correct bottom bar ──────────────────────────────────────── */
-function CorrectBar({ onContinue }: { onContinue: () => void }) {
+function CorrectBar({ explanation, onContinue }: { explanation?: string; onContinue: () => void }) {
   return (
     <motion.div
-      initial={{ y: 80, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: 80, opacity: 0 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-      className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-between px-4 py-4"
+      initial={{ y: '100%' }}
+      animate={{ y: 0 }}
+      exit={{ y: '100%' }}
+      transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+      className="fixed bottom-0 left-0 right-0 z-30 rounded-t-3xl px-5 py-4"
       style={{
-        background: '#DCFCE7',
+        background: '#F0FDF4',
         paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
-        boxShadow: '0 -2px 16px rgba(34,197,94,0.15)',
+        boxShadow: '0 -4px 24px rgba(0,0,0,0.12)',
+        borderTop: '2px solid #BBF7D0',
       }}
     >
-      <div className="flex items-center gap-2">
-        <CheckCircle size={24} style={{ color: '#16A34A' }} strokeWidth={2} />
-        <div>
-          <p className="font-display text-base font-bold" style={{ color: '#15803D' }}>Correct!</p>
-          <p className="font-ui text-xs" style={{ color: '#16A34A' }}>Keep it up</p>
+      <div className="flex items-start gap-3 mb-3">
+        <div className="flex-shrink-0">
+          <FoxyImage expression="celebrating" size={44} />
+        </div>
+        <div className="flex-1">
+          <p className="font-display text-lg font-bold" style={{ color: '#15803D' }}>That&apos;s correct!</p>
+          {explanation ? (
+            <p className="font-ui text-sm mt-0.5 leading-snug" style={{ color: '#16A34A' }}>{explanation}</p>
+          ) : (
+            <p className="font-ui text-sm mt-0.5" style={{ color: '#16A34A' }}>Well done, keep going!</p>
+          )}
         </div>
       </div>
       <motion.button
         onClick={onContinue}
-        className="rounded-2xl px-6 py-2.5 font-display font-bold text-white text-sm"
+        className="w-full rounded-2xl py-3 font-display font-bold text-white text-sm"
         style={{ background: '#16A34A', boxShadow: '0 4px 0 0 #166534' }}
         whileTap={{ y: 4, boxShadow: 'none' }}
       >
@@ -301,34 +301,62 @@ function CorrectBar({ onContinue }: { onContinue: () => void }) {
 }
 
 /* ── Wrong bottom sheet ──────────────────────────────────────── */
-function WrongSheet({ onContinue }: { onContinue: () => void }) {
+function WrongSheet({
+  correctAnswer,
+  explanation,
+  onContinue,
+}: {
+  correctAnswer?: string;
+  explanation?: string;
+  onContinue: () => void;
+}) {
   return (
     <motion.div
       initial={{ y: '100%' }}
       animate={{ y: 0 }}
       exit={{ y: '100%' }}
       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-      className="fixed bottom-0 left-0 right-0 z-30 rounded-t-3xl px-5 py-5"
+      className="fixed bottom-0 left-0 right-0 z-30 rounded-t-3xl px-5 py-4"
       style={{
-        background: '#FEF3C7',
+        background: 'white',
         paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
         boxShadow: '0 -4px 24px rgba(0,0,0,0.12)',
+        borderTop: '2px solid #FDE68A',
       }}
     >
-      <div className="flex items-start gap-3 mb-4">
-        <XCircle size={26} style={{ color: '#D97706' }} strokeWidth={2} />
+      <div className="flex items-start gap-3 mb-3">
+        <div className="flex-shrink-0">
+          <FoxyImage expression="sad" size={44} />
+        </div>
         <div>
-          <p className="font-display text-lg font-bold" style={{ color: '#92400E' }}>Oops! Try again</p>
-          <p className="font-ui text-sm" style={{ color: '#B45309' }}>Review your thinking and try once more</p>
+          <p className="font-display text-lg font-bold text-gray-900">Almost there!</p>
+          <p className="font-ui text-sm text-gray-500 mt-0.5">Here&apos;s the trick:</p>
         </div>
       </div>
+
+      {correctAnswer && (
+        <div
+          className="rounded-2xl px-4 py-3 mb-3"
+          style={{ background: '#F9FAFB', border: '1px solid #E5E7EB' }}
+        >
+          <p className="font-ui text-xs font-bold uppercase tracking-wider mb-1" style={{ color: '#9CA3AF' }}>
+            Correct Answer
+          </p>
+          <p className="font-display text-base font-bold text-gray-900">{correctAnswer}</p>
+        </div>
+      )}
+
+      {explanation && (
+        <p className="font-ui text-sm text-gray-600 mb-3 leading-relaxed">{explanation}</p>
+      )}
+
       <motion.button
         onClick={onContinue}
         className="w-full rounded-2xl py-3 font-display font-bold text-white text-sm"
         style={{ background: '#D97706', boxShadow: '0 4px 0 0 #92400E' }}
         whileTap={{ y: 4, boxShadow: 'none' }}
       >
-        Got it
+        Got it, continue
       </motion.button>
     </motion.div>
   );
@@ -700,10 +728,19 @@ export default function LessonPage() {
       {/* Feedback bars */}
       <AnimatePresence>
         {phase === 'feedback_correct' && (
-          <CorrectBar key="correct" onContinue={handleContinue} />
+          <CorrectBar
+            key="correct"
+            explanation={currentQuestion?.explanation}
+            onContinue={handleContinue}
+          />
         )}
         {phase === 'feedback_incorrect' && (
-          <WrongSheet key="wrong" onContinue={handleContinue} />
+          <WrongSheet
+            key="wrong"
+            correctAnswer={currentQuestion?.correctAnswer}
+            explanation={currentQuestion?.explanation}
+            onContinue={handleContinue}
+          />
         )}
       </AnimatePresence>
 
