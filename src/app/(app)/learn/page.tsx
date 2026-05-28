@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { BookOpen, Check, Lock, Zap } from 'lucide-react';
 import { useUserStore } from '@/stores/useUserStore';
+import { Button, ProgressBar } from '@/components/ui';
 import type { SectionProgress } from '@/types/lesson.types';
 
 /* ── Lesson name catalogue ─────────────────────────────────── */
@@ -57,10 +58,10 @@ interface SectionDef {
 }
 
 const SECTION_DEFS: SectionDef[] = [
-  { sectionId: 'sec1', sectionSlug: 'fractions-intro',       sectionTitle: 'Introduction to Fractions', totalLevels: 20, color: '#2563EB', bg: '#EFF6FF' },
-  { sectionId: 'sec2', sectionSlug: 'fractions-operations',  sectionTitle: 'Fraction Operations',       totalLevels: 20, color: '#059669', bg: '#ECFDF5' },
+  { sectionId: 'sec1', sectionSlug: 'fractions-intro',       sectionTitle: 'Introduction to Fractions', totalLevels: 20, color: '#F97316', bg: '#FFF7ED' },
+  { sectionId: 'sec2', sectionSlug: 'fractions-operations',  sectionTitle: 'Fraction Operations',       totalLevels: 20, color: '#F97316', bg: '#FFF7ED' },
   { sectionId: 'sec3', sectionSlug: 'algebra-intro',         sectionTitle: 'Introduction to Algebra',   totalLevels: 20, color: '#7C3AED', bg: '#F5F3FF' },
-  { sectionId: 'sec4', sectionSlug: 'algebra-expressions',   sectionTitle: 'Algebraic Expressions',     totalLevels: 20, color: '#DB2777', bg: '#FDF2F8' },
+  { sectionId: 'sec4', sectionSlug: 'algebra-expressions',   sectionTitle: 'Algebraic Expressions',     totalLevels: 20, color: '#7C3AED', bg: '#F5F3FF' },
 ];
 
 function buildSections(
@@ -88,13 +89,11 @@ function buildSections(
 /* ── Lesson tooltip ────────────────────────────────────────── */
 function LessonTooltip({
   lessonName,
-  color,
   sectionSlug,
   level,
   onStart,
 }: {
   lessonName: string;
-  color: string;
   sectionSlug: string;
   level: number;
   onStart: (s: string, l: number) => void;
@@ -120,15 +119,16 @@ function LessonTooltip({
         }}
       />
       <p className="font-display text-sm font-bold text-gray-900 mb-2">{lessonName}</p>
-      <motion.button
+      <Button
         onClick={() => onStart(sectionSlug, level)}
-        className="w-full rounded-xl py-2 font-display font-bold text-white text-xs flex items-center justify-center gap-1.5"
-        style={{ background: color, boxShadow: `0 3px 0 0 ${color}BB` }}
-        whileTap={{ y: 3, boxShadow: 'none' }}
+        size="sm"
+        fullWidth
+        leftIcon={<Zap size={12} fill="#FCD34D" stroke="#D97706" strokeWidth={0.5} />}
+        className="text-xs"
+        style={{ background: '#8A2BE2', boxShadow: '0 3px 0 0 #5B1483' }}
       >
-        <Zap size={12} fill="#FCD34D" stroke="#D97706" strokeWidth={0.5} />
         Start +10 XP
-      </motion.button>
+      </Button>
     </motion.div>
   );
 }
@@ -157,20 +157,18 @@ function SectionPath({
     <div className="pb-4">
       {/* Section header */}
       <div
-        className="mx-4 mb-4 rounded-2xl px-4 py-3 flex items-center gap-3"
+        className="mx-4 mb-4 rounded-xl px-4 py-3 flex items-center gap-3"
         style={{
-          background: section.isUnlocked
-            ? `linear-gradient(135deg, ${section.color} 0%, ${section.color}DD 100%)`
-            : '#E5E7EB',
+          background: section.isUnlocked ? section.color : '#E5E7EB',
         }}
       >
         <div
           className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: 'rgba(255,255,255,0.25)' }}
+          style={{ background: 'rgba(255,255,255,0.22)' }}
         >
           <BookOpen size={17} color="white" strokeWidth={2} />
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <p className="font-display text-sm font-bold text-white leading-tight">{section.sectionTitle}</p>
           <p className="font-ui text-xs text-white/80 mt-0.5">{section.highestLevel} / {totalLevels} lessons</p>
         </div>
@@ -179,15 +177,11 @@ function SectionPath({
       {/* Progress bar */}
       {section.isUnlocked && (
         <div className="mx-4 mb-4">
-          <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: section.bg }}>
-            <motion.div
-              className="h-full rounded-full"
-              style={{ background: section.color }}
-              initial={{ width: 0 }}
-              animate={{ width: `${Math.max(section.progressPercent * 100, 2)}%` }}
-              transition={{ duration: 0.7, ease: 'easeOut' }}
-            />
-          </div>
+          <ProgressBar
+            value={Math.max(section.progressPercent * 100, 2)}
+            variant={section.sectionSlug.startsWith('fractions') ? 'gold' : 'secondary'}
+            size="thin"
+          />
         </div>
       )}
 
@@ -234,10 +228,10 @@ function SectionPath({
                   {i > 0 && (
                     <div
                       style={{
-                        width: 3,
-                        height: 12,
-                        marginLeft: 28,
-                        background: nodes[i - 1].state === 'completed' ? section.color : '#E5E7EB',
+                        width: 4,
+                        height: 14,
+                        marginLeft: 32,
+                        background: nodes[i - 1].state === 'completed' ? '#FFB12D' : '#E5E7EB',
                         borderRadius: 2,
                       }}
                     />
@@ -255,15 +249,16 @@ function SectionPath({
                           if (isCompleted) onLessonTap(section.sectionSlug, level);
                         }
                       }}
-                      whileTap={!isLocked ? { scale: 0.9 } : undefined}
+                      whileTap={!isLocked ? { y: 5, boxShadow: 'none' } : undefined}
                       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                      className="flex-shrink-0 flex items-center justify-center rounded-full"
+                      className="flex-shrink-0 flex items-center justify-center"
                       style={{
-                        width:  isActive ? 64 : 60,
-                        height: isActive ? 64 : 60,
-                        background: isLocked ? '#E5E7EB' : isCompleted ? section.color : `linear-gradient(135deg, ${section.color}, ${section.color}CC)`,
-                        boxShadow: isLocked ? 'none' : isActive ? `0 6px 0 0 ${section.color}99, 0 0 0 4px ${section.color}22` : `0 4px 0 0 ${section.color}AA`,
-                        border: isActive ? `3px solid white` : 'none',
+                        width:       isActive ? 76 : 68,
+                        height:      isActive ? 56 : 50,
+                        borderRadius: 9999,
+                        background:  isLocked ? '#E5E5E5' : isCompleted ? '#FFB12D' : '#FFB12D',
+                        boxShadow:   isLocked ? '0 5px 0 0 #B7B7B7' : isActive ? '0 6px 0 0 #C47D00' : '0 5px 0 0 #DD9111',
+                        border:      isActive ? '3px solid #FFF0C8' : 'none',
                       }}
                       aria-label={lessonName}
                     >
@@ -288,7 +283,6 @@ function SectionPath({
                         <LessonTooltip
                           key="tooltip"
                           lessonName={lessonName}
-                          color={section.color}
                           sectionSlug={section.sectionSlug}
                           level={level}
                           onStart={onLessonTap}
@@ -325,7 +319,7 @@ export default function LearnPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#F8F7FF' }}>
+    <div className="min-h-screen bg-surface-page">
       <div className="px-4 pt-5 pb-4">
         <h1 className="font-display text-2xl font-bold text-gray-900">Learn</h1>
         <p className="font-ui text-sm text-gray-500 mt-0.5">Choose where to continue</p>

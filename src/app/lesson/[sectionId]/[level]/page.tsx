@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback, ReactNode } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { InlineMath, BlockMath } from 'react-katex';
+import { BlockMath } from 'react-katex';
 import Image from 'next/image';
-import { X, Heart, CheckCircle, Zap, BookOpen, Star, Lightbulb } from 'lucide-react';
+import { X, Heart, Zap, BookOpen, Star, Lightbulb } from 'lucide-react';
 import {
   useLessonStore,
   selectCurrentQuestion,
@@ -17,24 +17,10 @@ import { useLesson } from '@/hooks/useLesson';
 import { QuestionRenderer } from '@/components/questions/QuestionRenderer';
 import { QuitConfirmModal } from '@/components/lesson/QuitConfirmModal';
 import { FoxyImage } from '@/components/mascot/FoxyImage';
+import { Button } from '@/components/ui/Button';
 import { createClient } from '@/lib/supabase/client';
 
 // ─── Math text helper ─────────────────────────────────────────────────────────
-
-function renderMathText(text: string): ReactNode {
-  if (!text.includes('$')) return text;
-  const parts = text.split(/(\$[^$]+\$)/g);
-  return (
-    <>
-      {parts.map((part, i) => {
-        if (part.startsWith('$') && part.endsWith('$')) {
-          return <InlineMath key={i} math={part.slice(1, -1)} />;
-        }
-        return <span key={i}>{part}</span>;
-      })}
-    </>
-  );
-}
 
 function extractDisplayMath(text: string): string | null {
   const matches = [...text.matchAll(/\$([^$]+)\$/g)];
@@ -61,7 +47,7 @@ function LessonTopBar({
 
   return (
     <header
-      className="fixed top-0 inset-x-0 z-30 bg-white"
+      className="fixed top-0 inset-x-0 z-30 bg-surface"
       style={{ height: 56, boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}
     >
       <div className="max-w-lg mx-auto h-full flex items-center gap-3 px-4">
@@ -74,18 +60,13 @@ function LessonTopBar({
         <X size={18} strokeWidth={2} className="text-gray-500" />
       </button>
 
-      {/* Progress bar — striped texture */}
-      <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: '#E5E7EB' }}>
+      {/* Progress bar */}
+      <div className="flex-1 h-3 rounded-full overflow-hidden bg-gray-200">
         <motion.div
           className="h-full rounded-full"
           style={{
-            background: `repeating-linear-gradient(
-              90deg,
-              #8A2BE2 0px,
-              #8A2BE2 18px,
-              #7B27CC 18px,
-              #7B27CC 24px
-            )`,
+            background: '#F99526',
+            boxShadow: 'inset 0 0 0 1px #D87E1C, inset 0 -2px 0 #CD7310',
           }}
           initial={{ width: 0 }}
           animate={{ width: `${progress * 100}%` }}
@@ -100,7 +81,7 @@ function LessonTopBar({
             key={i}
             size={16}
             strokeWidth={1.5}
-            fill={i < hearts ? '#FB7185' : 'none'}
+            fill={i < hearts ? '#F43F5E' : 'none'}
             stroke={i < hearts ? '#E11D48' : '#D1D5DB'}
           />
         ))}
@@ -152,12 +133,9 @@ function QuestionBubble({ questionText, xpGain }: { questionText: string; xpGain
               filter: 'drop-shadow(-2px 0px 1px rgba(0,0,0,0.04))',
             }}
           />
-          <div
-            className="bg-white rounded-2xl px-4 py-3"
-            style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}
-          >
+          <div className="bg-surface rounded-2xl px-4 py-3 border-2 border-gray-100">
             <p className="font-display text-base font-bold text-gray-900 leading-snug">
-              {instrText || "Let's solve this together!"}
+              {instrText || "Let's solve this together"}
             </p>
           </div>
         </div>
@@ -208,7 +186,7 @@ function BottomBar({
 
   return (
     <div
-      className="fixed bottom-0 inset-x-0 z-30 bg-white"
+      className="fixed bottom-0 inset-x-0 z-30 bg-surface"
       style={{
         boxShadow: '0 -2px 16px rgba(0,0,0,0.08)',
         paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
@@ -231,8 +209,14 @@ function BottomBar({
         <div className="relative flex-shrink-0">
           <button
             onClick={onHint}
-            className="flex items-center gap-1.5 rounded-xl px-3 py-2.5 font-display font-bold text-sm"
-            style={{ background: '#FEF3C7', color: '#92400E' }}
+            className="flex items-center gap-1.5 rounded-full px-4 py-2.5 font-ui font-bold text-sm"
+            style={{
+              background: 'white',
+              color: '#374151',
+              border: '1px solid #E9EAEB',
+              boxShadow: 'inset 0px -4px 0px #EAEBED',
+            }}
+            aria-label="Show hint"
           >
             <Lightbulb size={15} strokeWidth={2} />
             <span>Hint</span>
@@ -248,19 +232,15 @@ function BottomBar({
         </div>
 
         {/* Submit — wider button */}
-        <motion.button
+        <Button
           onClick={onSubmit}
           disabled={!canSubmit}
-          className="flex-shrink-0 rounded-2xl py-2.5 font-display font-bold text-sm text-white"
-          style={{
-            minWidth: 110,
-            background: canSubmit ? '#8A2BE2' : '#D1D5DB',
-            boxShadow: canSubmit ? '0 4px 0 0 #5B1483' : 'none',
-          }}
-          whileTap={canSubmit ? { y: 4, boxShadow: 'none' } : undefined}
+          size="md"
+          className="flex-shrink-0 min-w-[110px] text-sm"
+          style={!canSubmit ? { background: '#D1D5DB', boxShadow: 'none' } : undefined}
         >
           Check
-        </motion.button>
+        </Button>
       </div>
     </div>
   );
@@ -282,32 +262,32 @@ function CorrectBar({ explanation, onContinue }: { explanation?: string; onConti
         borderRadius: '24px 24px 0 0',
       }}
     >
-      <div className="max-w-lg mx-auto px-5 pt-4 pb-1">
+      <div className="max-w-lg mx-auto px-5 pt-5 pb-1">
         {/* Foxy centered */}
-        <div className="flex justify-center mb-2">
+        <div className="flex justify-center mb-3">
           <div
-            className="w-20 h-20 rounded-full flex items-center justify-center"
-            style={{ background: '#F0FDF4' }}
+            className="w-24 h-24 rounded-full flex items-center justify-center"
+            style={{ background: '#F0FDF4', border: '2px solid #BBF7D0' }}
           >
-            <FoxyImage expression="celebrating" size={64} />
+            <FoxyImage expression="celebrating" size={76} />
           </div>
         </div>
 
-        <p className="font-display text-2xl font-bold text-center" style={{ color: '#15803D' }}>
+        <p className="font-display text-2xl font-bold text-center" style={{ color: '#0A0D12' }}>
           That&apos;s correct!
         </p>
-        <p className="font-ui text-sm text-center mt-1 mb-4" style={{ color: '#16A34A' }}>
+        <p className="font-ui text-base text-center mt-1 mb-4" style={{ color: '#717680' }}>
           {explanation ?? 'Well done, keep going!'}
         </p>
 
-        <motion.button
+        <Button
           onClick={onContinue}
-          className="w-full rounded-3xl py-4 font-display font-bold text-white text-base"
-          style={{ background: '#16A34A', boxShadow: '0 5px 0 0 #166534' }}
-          whileTap={{ y: 5, boxShadow: 'none' }}
+          variant="primary"
+          size="lg"
+          fullWidth
         >
-          Next
-        </motion.button>
+          Continue
+        </Button>
       </div>
     </motion.div>
   );
@@ -337,51 +317,51 @@ function WrongSheet({
         borderRadius: '24px 24px 0 0',
       }}
     >
-      <div className="max-w-lg mx-auto px-5 pt-4 pb-1">
+      <div className="max-w-lg mx-auto px-5 pt-5 pb-1">
         {/* Foxy centered */}
         <div className="flex justify-center mb-3">
           <div
-            className="w-24 h-24 rounded-full flex items-center justify-center"
-            style={{ background: '#FFF7ED' }}
+            className="w-28 h-28 rounded-full flex items-center justify-center"
+            style={{ background: '#FCF7EF' }}
           >
-            <FoxyImage expression="sad" size={76} />
+            <FoxyImage expression="sad" size={88} />
           </div>
         </div>
 
-        <p className="font-display text-2xl font-bold text-center text-gray-900">Almost There!</p>
-        <p className="font-ui text-sm text-center mt-1 mb-4" style={{ color: '#6B7280' }}>
-          No wahala &mdash; here&apos;s the trick:
+        <p className="font-display text-2xl font-bold text-center" style={{ color: '#0A0D12' }}>Almost there</p>
+        <p className="font-ui text-base text-center mt-1 mb-4" style={{ color: '#717680' }}>
+          No wahala, here&apos;s the correct answer
         </p>
 
         {correctAnswer && (
           <div
-            className="rounded-2xl px-4 py-3 mb-3"
-            style={{ background: '#F9FAFB', border: '1px solid #E5E7EB' }}
+            className="rounded-xl px-4 py-3 mb-3"
+            style={{ background: '#FDFDFD', border: '1px solid #E9EAEB' }}
           >
             <p
               className="font-ui text-xs font-bold uppercase tracking-wider mb-1"
               style={{ color: '#9CA3AF' }}
             >
-              Correct Answer:
+              Correct answer
             </p>
             <p className="font-display text-xl font-bold text-gray-900">{correctAnswer}</p>
           </div>
         )}
 
         {explanation && (
-          <p className="font-ui text-sm text-center text-gray-600 mb-4 leading-relaxed px-2">
+          <p className="font-ui text-base text-center mb-4 leading-relaxed px-2" style={{ color: '#717680' }}>
             {explanation}
           </p>
         )}
 
-        <motion.button
+        <Button
           onClick={onContinue}
-          className="w-full rounded-3xl py-4 font-display font-bold text-white text-base"
-          style={{ background: '#D97706', boxShadow: '0 5px 0 0 #92400E' }}
-          whileTap={{ y: 5, boxShadow: 'none' }}
+          variant="danger"
+          size="lg"
+          fullWidth
         >
           Got it
-        </motion.button>
+        </Button>
       </div>
     </motion.div>
   );
@@ -442,7 +422,7 @@ function LessonCompleteOverlay({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
       >
-        Lesson Complete!
+        Lesson complete
       </motion.h1>
 
       <motion.div
@@ -468,23 +448,22 @@ function LessonCompleteOverlay({
         >
           <div className="flex items-center gap-2">
             <Zap size={18} fill="#FCD34D" stroke="#D97706" strokeWidth={0.5} />
-            <span className="font-ui text-sm text-white/80">XP Earned</span>
+            <span className="font-ui text-sm text-white/80">XP earned</span>
           </div>
           <span className="font-display text-base font-bold text-white">+{xpEarned} XP</span>
         </div>
       </motion.div>
 
-      <motion.button
-        onClick={onClaim}
-        className="mt-8 w-full max-w-xs rounded-3xl py-4 font-display font-bold text-white text-lg"
-        style={{ background: '#8A2BE2', boxShadow: '0 6px 0 0 #5B1483' }}
-        whileTap={{ y: 6, boxShadow: 'none' }}
+      <motion.div
+        className="mt-8 w-full max-w-xs"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.9 }}
       >
-        Claim Rewards
-      </motion.button>
+        <Button onClick={onClaim} size="lg" fullWidth>
+          Continue
+        </Button>
+      </motion.div>
     </motion.div>
   );
 }
@@ -494,7 +473,7 @@ function LoadingSpinner() {
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-20">
       <div className="w-12 h-12 rounded-full border-4 border-purple-200 border-t-purple-600 animate-spin" />
-      <p className="font-ui text-gray-500 text-sm">Loading your lesson...</p>
+      <p className="font-ui text-gray-500 text-sm">Loading your lesson</p>
     </div>
   );
 }
@@ -505,17 +484,16 @@ function HeartsEmptyScreen({ onQuit }: { onQuit: () => void }) {
     <div className="flex flex-col items-center justify-center gap-6 py-12 text-center px-4">
       <FoxyImage expression="sad" size={110} />
       <div>
-        <h2 className="font-display text-2xl font-bold text-gray-900 mb-2">Out of hearts!</h2>
-        <p className="font-ui text-gray-500 text-sm">Hearts refill every 30 minutes. Come back soon!</p>
+        <h2 className="font-display text-2xl font-bold text-gray-900 mb-2">Out of hearts</h2>
+        <p className="font-ui text-gray-500 text-sm">Hearts refill every 30 minutes. Come back soon</p>
       </div>
-      <motion.button
+      <Button
         onClick={onQuit}
-        className="w-full max-w-xs rounded-2xl py-4 font-display font-bold text-white text-lg"
-        style={{ background: '#8A2BE2', boxShadow: '0 4px 0 0 #5B1483' }}
-        whileTap={{ y: 4, boxShadow: 'none' }}
+        size="lg"
+        className="w-full max-w-xs"
       >
-        Go Home
-      </motion.button>
+        Go home
+      </Button>
     </div>
   );
 }
@@ -531,12 +509,8 @@ export default function LessonPage() {
 
   const { isLoading: lessonLoading } = useLesson(sectionId, level);
 
-  const phase          = useLessonStore((s) => s.phase);
-  const sectionTitle   = useLessonStore((s) => s.sectionTitle);
-  const xpEarned       = useLessonStore((s) => s.xpEarned);
-  const answers        = useLessonStore((s) => s.answers);
-  const questionQueue  = useLessonStore((s) => s.questionQueue);
-  const setPhase       = useLessonStore((s) => s.setPhase);
+  const phase    = useLessonStore((s) => s.phase);
+  const setPhase = useLessonStore((s) => s.setPhase);
   const submitAnswer   = useLessonStore((s) => s.submitAnswer);
   const advanceQuestion = useLessonStore((s) => s.advanceQuestion);
   const loseHeart      = useLessonStore((s) => s.loseHeart);
@@ -559,6 +533,8 @@ export default function LessonPage() {
   const [showHint, setShowHint] = useState(false);
   const [hintIndex, setHintIndex] = useState(0);
   const [showCompleteOverlay, setShowCompleteOverlay] = useState(false);
+  // Snapshot taken at the moment the lesson_complete phase fires — avoids stale closure zeros
+  const [completionStats, setCompletionStats] = useState({ correct: 0, total: 0, xp: 0 });
 
   useEffect(() => {
     setPendingAnswer(null);
@@ -571,10 +547,15 @@ export default function LessonPage() {
   useEffect(() => {
     if (phase !== 'lesson_complete') return;
 
-    const correct = answers.filter((a) => a.isCorrect).length;
-    const total   = questionQueue.length;
-    const xpToAward = xpEarned > 0 ? xpEarned : correct * 10;
+    // Use getState() to read fresh values — avoids stale React closure
+    const fresh = useLessonStore.getState();
+    const correct = fresh.answers.filter((a) => a.isCorrect).length;
+    const total   = fresh.questionQueue.length;
+    const xpToAward = fresh.xpEarned > 0 ? fresh.xpEarned : correct * 10;
     const passed = total > 0 && correct / total >= 0.6;
+
+    // Snapshot into local state so LessonCompleteOverlay always shows accurate numbers
+    setCompletionStats({ correct, total, xp: xpToAward });
 
     addXpUser(xpToAward);
     updateStats({
@@ -660,17 +641,9 @@ export default function LessonPage() {
   }, [currentQuestion]);
 
   const handleClaimRewards = useCallback(() => {
-    const correct = answers.filter((a) => a.isCorrect).length;
-    const total   = questionQueue.length;
-    const xpToAward = xpEarned > 0 ? xpEarned : correct * 10;
-    const passed = total > 0 && correct / total >= 0.6;
-    const sp = new URLSearchParams({
-      xp: String(xpToAward), correct: String(correct),
-      total: String(total), level: String(level), sectionId, sectionTitle, passed: String(passed),
-    });
     resetLesson();
-    router.push(`/reward?${sp.toString()}`);
-  }, [answers, questionQueue, xpEarned, level, sectionId, sectionTitle, resetLesson, router]);
+    router.push('/home');
+  }, [resetLesson, router]);
 
   const isInFeedback = phase === 'feedback_correct' || phase === 'feedback_incorrect';
   const showQuestion = phase === 'question' && !!currentQuestion;
@@ -678,7 +651,7 @@ export default function LessonPage() {
   const maxHearts    = userStats?.maxHearts ?? 5;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#F8F7FF' }}>
+    <div className="min-h-screen flex flex-col bg-surface-page">
       <LessonTopBar
         current={currentIndex + 1}
         total={queueLength}
@@ -701,7 +674,7 @@ export default function LessonPage() {
             <QuestionBubble questionText={currentQuestion.questionText} xpGain={10} />
 
             {/* Instruction label */}
-            <p className="font-display text-xs font-bold text-gray-400 uppercase tracking-widest px-5">
+            <p className="font-display text-xs font-bold text-gray-400 px-5">
               Select the correct answer
             </p>
 
@@ -722,11 +695,11 @@ export default function LessonPage() {
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mx-4 rounded-2xl px-4 py-3 flex items-start gap-2"
-                style={{ background: '#FEF3C7', border: '1.5px solid #FDE047' }}
+                className="mx-4 rounded-xl px-4 py-3 flex items-start gap-2"
+                style={{ background: '#FFFCF0', border: '1px solid #FFAC21' }}
               >
-                <Lightbulb size={16} style={{ color: '#D97706' }} strokeWidth={2} className="flex-shrink-0 mt-0.5" />
-                <p className="font-ui text-sm text-amber-800">
+                <Lightbulb size={16} style={{ color: '#FFAC21' }} strokeWidth={2} className="flex-shrink-0 mt-0.5" />
+                <p className="font-ui text-sm" style={{ color: '#92400E' }}>
                   {currentQuestion.hints[hintIndex - 1]}
                 </p>
               </motion.div>
@@ -775,9 +748,9 @@ export default function LessonPage() {
       <AnimatePresence>
         {showCompleteOverlay && (
           <LessonCompleteOverlay
-            correct={answers.filter((a) => a.isCorrect).length}
-            total={questionQueue.length}
-            xpEarned={xpEarned > 0 ? xpEarned : answers.filter((a) => a.isCorrect).length * 10}
+            correct={completionStats.correct}
+            total={completionStats.total}
+            xpEarned={completionStats.xp}
             onClaim={handleClaimRewards}
           />
         )}

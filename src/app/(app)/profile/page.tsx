@@ -8,6 +8,7 @@ import Image from 'next/image';
 import {
   Flame, Zap, BookOpen, Target, LogOut, Star,
   ChevronRight, Pencil, Check, X, Volume2, VolumeX,
+  Trophy, GraduationCap,
 } from 'lucide-react';
 import { useUserStore, selectAccuracy } from '@/stores/useUserStore';
 import { useStreakStore } from '@/stores/useStreakStore';
@@ -34,22 +35,109 @@ function getAvatarSrc(avatarId: string): string {
 }
 
 /* ── Hex badge (mini) ─────────────────────────────────────── */
-function MiniBadge({ color }: { color: string }) {
+type MiniBadgeIcon = 'trophy' | 'flame' | 'book' | 'star' | 'grad' | 'zap';
+
+const MINI_ICON_MAP: Record<MiniBadgeIcon, React.ReactNode> = {
+  trophy: <Trophy  size={14} color="white" strokeWidth={2} />,
+  flame:  <Flame   size={14} color="white" strokeWidth={2} />,
+  book:   <BookOpen size={14} color="white" strokeWidth={2} />,
+  star:   <Star    size={14} color="white" strokeWidth={2} />,
+  grad:   <GraduationCap size={14} color="white" strokeWidth={2} />,
+  zap:    <Zap     size={14} color="white" strokeWidth={2} />,
+};
+
+function MiniBadge({ color, icon, earned }: { color: string; icon: MiniBadgeIcon; earned: boolean }) {
+  const gid = `mb-${color.replace('#', '')}`;
   return (
-    <svg width="36" height="40" viewBox="0 0 100 110">
-      <defs>
-        <linearGradient id={`mb-${color.replace('#', '')}`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor={color} />
-          <stop offset="100%" stopColor={color} stopOpacity="0.7" />
-        </linearGradient>
-      </defs>
-      <polygon
-        points="50,5 93,27.5 93,72.5 50,95 7,72.5 7,27.5"
-        fill={`url(#mb-${color.replace('#', '')})`}
-        stroke={color}
-        strokeWidth="1.5"
-      />
-    </svg>
+    <div className="relative flex-shrink-0" style={{ width: 44, height: 48 }}>
+      <svg
+        viewBox="0 0 100 110"
+        width={44}
+        height={48}
+        className="absolute inset-0"
+      >
+        <defs>
+          <linearGradient id={gid} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={earned ? color : '#D1D5DB'} />
+            <stop offset="100%" stopColor={earned ? color : '#9CA3AF'} />
+          </linearGradient>
+        </defs>
+        <polygon
+          points="50,5 93,27.5 93,72.5 50,95 7,72.5 7,27.5"
+          fill={`url(#${gid})`}
+          stroke={earned ? color : '#9CA3AF'}
+          strokeWidth="1.5"
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center" style={{ paddingTop: 4 }}>
+        {MINI_ICON_MAP[icon]}
+      </div>
+    </div>
+  );
+}
+
+/* ── Streak calendar ───────────────────────────────────────── */
+function StreakCalendar({
+  currentStreak,
+  lastActivityDate,
+}: {
+  currentStreak: number;
+  lastActivityDate: string | null;
+}) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDow = new Date(year, month, 1).getDay(); // 0 = Sun
+  const today = now.getDate();
+
+  // Build the set of streak-active day numbers
+  const activeSet = new Set<number>();
+  if (lastActivityDate && currentStreak > 0) {
+    const last = new Date(lastActivityDate + 'T00:00:00');
+    if (last.getFullYear() === year && last.getMonth() === month) {
+      for (let i = 0; i < currentStreak; i++) {
+        const d = last.getDate() - i;
+        if (d >= 1) activeSet.add(d);
+      }
+    }
+  }
+
+  const monthName = now.toLocaleString('default', { month: 'long' });
+
+  return (
+    <div className="px-4 pb-4">
+      <p className="font-ui text-xs font-semibold text-gray-400 mb-2 text-center">{monthName} {year}</p>
+      {/* Day headers */}
+      <div className="grid grid-cols-7 mb-1">
+        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
+          <div key={d} className="text-center font-ui text-[10px] font-bold text-gray-400">{d}</div>
+        ))}
+      </div>
+      {/* Day cells */}
+      <div className="grid grid-cols-7 gap-0.5">
+        {Array.from({ length: firstDow }).map((_, i) => <div key={`e${i}`} />)}
+        {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
+          const isToday  = day === today;
+          const isActive = activeSet.has(day);
+          return (
+            <div
+              key={day}
+              className="aspect-square flex items-center justify-center rounded-full"
+              style={{
+                background: isActive ? '#8A2BE2' : isToday ? '#F5F0FF' : 'transparent',
+                color: isActive ? 'white' : isToday ? '#8A2BE2' : '#6B7280',
+                fontSize: 11,
+                fontWeight: isActive || isToday ? 700 : 500,
+                fontFamily: 'Nunito, sans-serif',
+              }}
+            >
+              {day}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -80,12 +168,13 @@ export default function ProfilePage() {
   const accuracy      = useUserStore(selectAccuracy);
   const updateProfile = useUserStore((s) => s.updateProfile);
   const resetUser     = useUserStore((s) => s.reset);
-  const currentStreak = useStreakStore((s) => s.currentStreak);
-  const resetStreak   = useStreakStore((s) => s.reset);
+  const currentStreak     = useStreakStore((s) => s.currentStreak);
+  const lastActivityDate  = useStreakStore((s) => s.lastActivityDate);
+  const resetStreak       = useStreakStore((s) => s.reset);
   const sfxEnabled    = useAudioStore((s) => s.sfxEnabled);
   const toggleSfx     = useAudioStore((s) => s.toggleSfx);
 
-  const username         = profile?.username ?? 'Champion';
+  const username         = profile?.username ?? '';
   const avatarId         = profile?.avatarId ?? 'happy';
   const avatarSrc        = getAvatarSrc(avatarId);
   const joinYear         = 2025;
@@ -133,7 +222,14 @@ export default function ProfilePage() {
     }
   }
 
-  const BADGE_COLORS = ['#F59E0B', '#F97316', '#3B82F6', '#EF4444', '#8A2BE2', '#16A34A'];
+  const PROFILE_BADGES: { color: string; icon: MiniBadgeIcon; earned: boolean }[] = [
+    { color: '#F59E0B', icon: 'trophy', earned: lessonsCompleted >= 1  },
+    { color: '#F97316', icon: 'flame',  earned: currentStreak >= 3     },
+    { color: '#F97316', icon: 'book',   earned: lessonsCompleted >= 10 },
+    { color: '#10B981', icon: 'zap',    earned: lessonsCompleted >= 5  },
+    { color: '#8A2BE2', icon: 'grad',   earned: totalXp >= 50          },
+    { color: '#10B981', icon: 'star',   earned: false                  },
+  ];
 
   return (
     <div className="min-h-screen pb-8" style={{ background: '#F8F7FF' }}>
@@ -168,32 +264,16 @@ export default function ProfilePage() {
                     <Pencil size={12} style={{ color: '#8A2BE2' }} strokeWidth={2.5} />
                   </motion.button>
                 </div>
-                <h1 className="font-display text-xl font-bold text-gray-900">{username}</h1>
-                <p className="font-ui text-xs text-gray-400">Joined {joinYear}</p>
-              </div>
+                <h1 className="font-display text-xl font-bold text-gray-900">{username || 'Your Profile'}</h1>
+                <p className="font-ui text-xs text-gray-400 mt-0.5">Joined {joinYear}</p>
 
-              {/* Stats strip */}
-              <div className="flex items-stretch mt-5 divide-x divide-gray-100">
-                <div className="flex-1 flex flex-col items-center gap-1 px-3">
-                  <div className="flex items-center gap-1">
-                    <Flame size={16} fill="#F97316" stroke="#EA580C" strokeWidth={0.5} />
-                    <span className="font-display text-xl font-bold text-gray-900 tabular-nums">{currentStreak}</span>
-                  </div>
-                  <p className="font-ui text-xs text-gray-400">Day streak</p>
-                </div>
-                <div className="flex-1 flex flex-col items-center gap-1 px-3">
-                  <div className="flex items-center gap-1">
-                    <Zap size={16} fill="#FCD34D" stroke="#D97706" strokeWidth={0.5} />
-                    <span className="font-display text-xl font-bold text-gray-900 tabular-nums">{totalXp}</span>
-                  </div>
-                  <p className="font-ui text-xs text-gray-400">Total XP</p>
-                </div>
-                <div className="flex-1 flex flex-col items-center gap-1 px-3">
-                  <div className="flex items-center gap-1">
-                    <Star size={16} fill="#FBBF24" stroke="#D97706" strokeWidth={0.5} />
-                    <span className="font-display text-xl font-bold text-gray-900 tabular-nums">{level}</span>
-                  </div>
-                  <p className="font-ui text-xs text-gray-400">Level</p>
+                {/* Level badge */}
+                <div
+                  className="mt-2 inline-flex items-center gap-1 px-3 py-1 rounded-full font-ui text-xs font-bold text-white"
+                  style={{ background: '#8A2BE2' }}
+                >
+                  <Star size={10} fill="white" strokeWidth={0} />
+                  Level {level}
                 </div>
               </div>
             </motion.div>
@@ -300,13 +380,18 @@ export default function ProfilePage() {
           </div>
         </SectionCard>
 
+        {/* Streak Calendar */}
+        <SectionCard label="Activity">
+          <StreakCalendar currentStreak={currentStreak} lastActivityDate={lastActivityDate} />
+        </SectionCard>
+
         {/* Achievements */}
         <SectionCard label="Achievements">
           <div className="px-4 pb-4">
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {BADGE_COLORS.map((c, i) => (
-                <div key={i} className="flex-shrink-0" style={{ opacity: i < 2 ? 1 : 0.35 }}>
-                  <MiniBadge color={c} />
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              {PROFILE_BADGES.map((b, i) => (
+                <div key={i} style={{ opacity: b.earned ? 1 : 0.35 }}>
+                  <MiniBadge color={b.color} icon={b.icon} earned={b.earned} />
                 </div>
               ))}
             </div>

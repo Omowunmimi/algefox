@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useUserStore } from '@/stores/useUserStore';
 import { useStreakStore, selectPracticedToday } from '@/stores/useStreakStore';
+import { Button, Card, ProgressBar } from '@/components/ui';
 import type { SectionProgress } from '@/types/lesson.types';
 
 /* ── Section catalogue ─────────────────────────────────────── */
@@ -58,12 +59,9 @@ function HeroCard({
       style={{
         background: 'linear-gradient(135deg, #8A2BE2 0%, #6D28D9 100%)',
         minHeight: 148,
+        boxShadow: 'var(--shadow-physical-primary)',
       }}
     >
-      {/* Decorative orbs */}
-      <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-white/5 pointer-events-none" />
-      <div className="absolute bottom-0 right-16 w-24 h-24 rounded-full bg-white/5 pointer-events-none" />
-
       <div className="relative z-10 pt-5 pl-5 pb-4 pr-32">
         <p className="font-display text-xl font-bold text-white leading-tight">
           Hi, {firstName}!
@@ -117,40 +115,29 @@ function ContinueLearningCard({
   if (!activeSection) return null;
 
   return (
-    <div
-      className="mx-4 rounded-3xl bg-white p-4"
-      style={{ boxShadow: '0 2px 16px rgba(138,43,226,0.08)' }}
-    >
-      <p className="font-ui text-xs font-bold uppercase tracking-widest" style={{ color: '#8A2BE2' }}>
-        Continue Learning
+    <Card variant="physical" padding="md" className="mx-4 rounded-3xl">
+      <p className="font-ui text-xs font-bold text-primary">
+        Continue learning
       </p>
       <h3 className="font-display text-base font-bold text-gray-900 mt-1 leading-tight">
         {activeSection.sectionTitle}
       </h3>
       <p className="font-ui text-xs text-gray-400 mt-0.5">Level {activeSection.currentLevel}</p>
 
-      <div className="w-full h-2 rounded-full mt-3 overflow-hidden" style={{ background: '#EDE9FE' }}>
-        <motion.div
-          className="h-full rounded-full"
-          style={{ background: '#8A2BE2' }}
-          initial={{ width: 0 }}
-          animate={{ width: `${Math.max(activeSection.progressPercent * 100, 3)}%` }}
-          transition={{ duration: 0.7, ease: 'easeOut' }}
-        />
-      </div>
+      <ProgressBar
+        value={Math.max(activeSection.progressPercent * 100, 3)}
+        variant="primary"
+        size="thin"
+        className="mt-3"
+      />
       <p className="font-ui text-[10px] text-gray-400 mt-1 text-right">
         {activeSection.highestLevel} / 20
       </p>
 
-      <motion.button
-        onClick={onContinue}
-        className="w-full mt-3 rounded-2xl py-3 font-display font-bold text-white text-sm flex items-center justify-center gap-1"
-        style={{ background: '#8A2BE2', boxShadow: '0 4px 0 0 #5B1483' }}
-        whileTap={{ y: 4, boxShadow: 'none' }}
-      >
-        Start Lesson <span aria-hidden="true">→</span>
-      </motion.button>
-    </div>
+      <Button onClick={onContinue} size="md" fullWidth className="mt-3">
+        Start lesson
+      </Button>
+    </Card>
   );
 }
 
@@ -162,8 +149,8 @@ function DailyChallengeCard({ onPress }: { onPress: () => void }) {
         onClick={onPress}
         className="w-full rounded-3xl p-4 text-left flex items-center gap-4"
         style={{
-          background: 'linear-gradient(135deg, #0F0A1E 0%, #1E0A3C 50%, #2D0A4E 100%)',
-          boxShadow: '0 4px 0 0 #080412',
+          background: 'linear-gradient(135deg, #7C3AED 0%, #5B1483 100%)',
+          boxShadow: 'var(--shadow-physical-primary)',
         }}
         whileTap={{ y: 4, boxShadow: 'none' }}
       >
@@ -176,7 +163,7 @@ function DailyChallengeCard({ onPress }: { onPress: () => void }) {
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="font-display text-base font-bold text-white">Daily Challenge</p>
+          <p className="font-display text-base font-bold text-white">Daily challenge</p>
           <p className="font-ui text-xs text-white/75 mt-0.5">Earn 100 XP</p>
           <div className="w-full h-1.5 rounded-full mt-2 overflow-hidden" style={{ background: 'rgba(255,255,255,0.2)' }}>
             <div className="w-[60%] h-full rounded-full bg-white" />
@@ -192,10 +179,10 @@ function DailyChallengeCard({ onPress }: { onPress: () => void }) {
 
 /* ── Progress section ──────────────────────────────────────── */
 const SECTION_CONFIG: Record<string, { color: string; bg: string }> = {
-  'fractions-intro':      { color: '#2563EB', bg: '#EFF6FF' },
-  'fractions-operations': { color: '#059669', bg: '#ECFDF5' },
+  'fractions-intro':      { color: '#F97316', bg: '#FFF7ED' },
+  'fractions-operations': { color: '#F97316', bg: '#FFF7ED' },
   'algebra-intro':        { color: '#7C3AED', bg: '#F5F3FF' },
-  'algebra-expressions':  { color: '#DB2777', bg: '#FDF2F8' },
+  'algebra-expressions':  { color: '#7C3AED', bg: '#F5F3FF' },
 };
 
 function ProgressSection({ sections }: { sections: SectionProgress[] }) {
@@ -210,8 +197,8 @@ function ProgressSection({ sections }: { sections: SectionProgress[] }) {
   return (
     <div className="mx-4">
       <div className="flex justify-between items-center mb-3">
-        <h2 className="font-display text-lg font-bold text-gray-900">Your Progress</h2>
-        <Link href="/learn" className="font-ui text-sm font-semibold" style={{ color: '#8A2BE2' }}>View all</Link>
+        <h2 className="font-display text-lg font-bold text-gray-900">Your progress</h2>
+        <Link href="/learn" className="font-ui text-sm font-semibold text-primary">View all</Link>
       </div>
 
       {pairs.map((pair, pi) => (
@@ -219,10 +206,11 @@ function ProgressSection({ sections }: { sections: SectionProgress[] }) {
           {pair.map((s) => {
             const cfg = SECTION_CONFIG[s.sectionSlug] ?? { color: '#8A2BE2', bg: '#F5F0FF' };
             return (
-              <div
+              <Card
                 key={s.sectionId}
-                className="flex-1 bg-white rounded-2xl p-3"
-                style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.06)' }}
+                variant="outlined"
+                padding="sm"
+                className="flex-1"
               >
                 <div
                   className="w-9 h-9 rounded-xl flex items-center justify-center mb-2"
@@ -245,7 +233,7 @@ function ProgressSection({ sections }: { sections: SectionProgress[] }) {
                     transition={{ duration: 0.6, ease: 'easeOut' }}
                   />
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>
@@ -256,10 +244,10 @@ function ProgressSection({ sections }: { sections: SectionProgress[] }) {
 
 /* ── Achievements strip ─────────────────────────────────────── */
 const BADGE_DEFS = [
-  { id: '1', color: '#F59E0B', bg: '#FEF3C7', title: 'First Steps',    icon: <Star size={16} fill="#F59E0B" stroke="#D97706" strokeWidth={0.5} /> },
-  { id: '2', color: '#EA580C', bg: '#FFF7ED', title: 'Streak Master',  icon: <Flame size={16} fill="#EA580C" stroke="#C2410C" strokeWidth={0.5} /> },
-  { id: '3', color: '#3B82F6', bg: '#EFF6FF', title: 'Explorer',       icon: <BookOpen size={16} style={{ color: '#3B82F6' }} strokeWidth={2} /> },
-  { id: '4', color: '#8A2BE2', bg: '#F5F0FF', title: 'Quick Thinker',  icon: <Zap size={16} fill="#8A2BE2" stroke="#6D28D9" strokeWidth={0.5} /> },
+  { id: '1', color: '#F59E0B', bg: '#FEF3C7', title: 'First steps',    icon: <Star size={16} fill="#F59E0B" stroke="#D97706" strokeWidth={0.5} /> },
+  { id: '2', color: '#EA580C', bg: '#FFF7ED', title: 'Streak master',  icon: <Flame size={16} fill="#EA580C" stroke="#C2410C" strokeWidth={0.5} /> },
+  { id: '3', color: '#F97316', bg: '#FFF7ED', title: 'Explorer',       icon: <BookOpen size={16} style={{ color: '#F97316' }} strokeWidth={2} /> },
+  { id: '4', color: '#8A2BE2', bg: '#F5F0FF', title: 'Quick thinker',  icon: <Zap size={16} fill="#8A2BE2" stroke="#6D28D9" strokeWidth={0.5} /> },
 ] as const;
 
 function AchievementsStrip({ lessonsCompleted, streak }: { lessonsCompleted: number; streak: number }) {
@@ -268,17 +256,18 @@ function AchievementsStrip({ lessonsCompleted, streak }: { lessonsCompleted: num
   return (
     <div className="mx-4">
       <div className="flex justify-between items-center mb-3">
-        <h2 className="font-display text-lg font-bold text-gray-900">Recent Achievements</h2>
-        <Link href="/achievements" className="font-ui text-sm font-semibold" style={{ color: '#8A2BE2' }}>View all</Link>
+        <h2 className="font-display text-lg font-bold text-gray-900">Recent achievements</h2>
+        <Link href="/achievements" className="font-ui text-sm font-semibold text-primary">View all</Link>
       </div>
 
       <div className="flex gap-3 overflow-x-auto pb-1 -mx-0">
         {BADGE_DEFS.map((badge, i) => (
-          <div
+          <Card
             key={badge.id}
-            className="flex-shrink-0 w-24 rounded-2xl p-3 bg-white flex flex-col items-center gap-1.5 text-center"
+            variant="outlined"
+            padding="sm"
+            className="flex-shrink-0 w-24 flex flex-col items-center gap-1.5 text-center"
             style={{
-              boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
               opacity: earned[i] ? 1 : 0.45,
             }}
           >
@@ -290,9 +279,9 @@ function AchievementsStrip({ lessonsCompleted, streak }: { lessonsCompleted: num
             </div>
             <p className="font-ui text-[10px] font-bold text-gray-700 leading-tight">{badge.title}</p>
             {earned[i] && (
-              <CheckCircle size={12} style={{ color: '#22C55E' }} />
+              <CheckCircle size={12} className="text-success" />
             )}
-          </div>
+          </Card>
         ))}
       </div>
     </div>
@@ -310,8 +299,8 @@ export default function HomePage() {
   const practicedToday    = useStreakStore(selectPracticedToday);
 
   const sections         = buildSections(completedSections);
-  const username         = profile?.username ?? 'Champion';
-  const firstName        = username.split(' ')[0];
+  const username         = profile?.username ?? '';
+  const firstName        = username.split(' ')[0] || 'there';
   const totalXp          = stats?.totalXp ?? 0;
   const level            = stats?.level ?? 1;
   const hearts           = stats?.hearts ?? 5;
@@ -327,7 +316,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen pb-6" style={{ background: '#F8F7FF' }}>
+    <div className="min-h-screen pb-6 bg-surface-page">
 
       {/* Hero */}
       <motion.div
